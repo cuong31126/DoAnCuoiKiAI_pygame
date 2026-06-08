@@ -17,7 +17,7 @@ class Game:
         except pygame.error:
             pass
 
-        pygame.display.set_caption("AI Quest: Labyrinth of Algorithms")
+        pygame.display.set_caption("AI Hospital Dispatcher")
         self.window = pygame.display.set_mode(self.compute_window_size(), pygame.RESIZABLE)
         self.screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT)).convert_alpha()
         self.viewport = pygame.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -78,14 +78,10 @@ class Game:
             from scenes.map_select import MapSelect
 
             self.scene = MapSelect(self.screen, self)
-        elif scene_name == "map1":
-            from maps.map1_forest.map1_scene import Map1Scene
+        elif scene_name.startswith("map") and scene_name[3:].isdigit():
+            from maps.hospital_dispatcher.hospital_scene import HospitalScene
 
-            self.scene = Map1Scene(self.screen, self)
-        elif scene_name == "map2":
-            from maps.map2_rescue.map2_scene import Map2Scene
-
-            self.scene = Map2Scene(self.screen, self)
+            self.scene = HospitalScene(self.screen, self, int(scene_name[3:]))
         else:
             raise ValueError(f"Scene khong ton tai: {scene_name}")
 

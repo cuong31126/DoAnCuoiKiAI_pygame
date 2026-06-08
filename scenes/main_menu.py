@@ -35,13 +35,13 @@ class MainMenu(SceneBase):
         self.screen.blit(self.bg, (0, 0))
         logo_rect = self.logo.get_rect(center=(SCREEN_WIDTH // 2, 105))
         self.screen.blit(self.logo, logo_rect)
-        draw_glow_text(self.screen, "AI QUEST", 72, (SCREEN_WIDTH // 2, 185), COLOR_GOLD)
-        draw_text(self.screen, "LABYRINTH OF ALGORITHMS", 28, COLOR_WHITE, (SCREEN_WIDTH // 2, 240), center=True, alpha=210)
+        draw_glow_text(self.screen, "AI HOSPITAL", 66, (SCREEN_WIDTH // 2, 185), COLOR_GOLD)
+        draw_text(self.screen, "DISPATCHER", 34, COLOR_WHITE, (SCREEN_WIDTH // 2, 240), center=True, alpha=220)
         for button in self.buttons:
             button.draw(self.screen)
         draw_text(
             self.screen,
-            "Moi man choi day ban mot thuat toan AI!",
+            "Choose an AI algorithm and watch the medical robot dispatch tasks.",
             24,
             COLOR_WHITE,
             (SCREEN_WIDTH // 2, SCREEN_HEIGHT - 105),

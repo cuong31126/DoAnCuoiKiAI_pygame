@@ -1,4 +1,4 @@
-"""Cau hinh chung cho AI Quest."""
+"""Cau hinh chung cho AI Hospital Dispatcher."""
 
 # Kich thuoc cua so game
 SCREEN_WIDTH = 1280

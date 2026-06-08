@@ -9,7 +9,7 @@ class MapSelect(SceneBase):
     """Man chon man choi."""
 
     def play_button_rect(self, card_rect):
-        return pygame.Rect(card_rect.x + 60, card_rect.y + 150, 130, 36)
+        return pygame.Rect(card_rect.x + 60, card_rect.y + 169, 130, 27)
 
     def on_enter(self):
         self.bg = assets.load_image("assets/menu/bg2.png", (SCREEN_WIDTH, SCREEN_HEIGHT), fallback_color=COLOR_BG)
@@ -20,12 +20,12 @@ class MapSelect(SceneBase):
         gap_x = 80
         gap_y = 55
         data = [
-            ("MAN 1", "Khu rung\nhon mang", "map1", True, "RUNG","assets/select/man1.png"),
-            ("MAN 2", "Tram cuu\nho ma thu", "map2", True, "MA THU","assets/select/man2.png"),
-            ("MAN 3", "(Khoa)", None, False, "KHOA","assets/select/man3.png"),
-            ("MAN 4", "(Khoa)", None, False, "KHOA","assets/select/man4.png"),
-            ("MAN 5", "(Khoa)", None, False, "KHOA","assets/select/man5.png"),
-            ("MAN 6", "(Khoa)", None, False, "KHOA","assets/select/man6.png"),
+            ("LEVEL 1", "Basic delivery\nBFS DFS UCS", "map1", True, "DELIVERY","assets/select/man1.png"),
+            ("LEVEL 2", "Multi patient\nA* Greedy WA*", "map2", True, "ROUTING","assets/select/man2.png"),
+            ("LEVEL 3", "Battery plan\nLocal search", "map3", True, "BATTERY","assets/select/man1.png"),
+            ("LEVEL 4", "Dynamic halls\nRe-planning", "map4", True, "DYNAMIC","assets/select/man2.png"),
+            ("LEVEL 5", "Emergency CSP\nDeadlines", "map5", True, "CSP","assets/select/man1.png"),
+            ("LEVEL 6", "Crisis control\nGame search", "map6", True, "CRISIS","assets/select/man2.png"),
         ]
         for i, item in enumerate(data):
             row = i // 3
@@ -40,7 +40,7 @@ class MapSelect(SceneBase):
             title, desc, target, unlocked, icon_text, preview_path = item
             preview_img = assets.load_image(
                 preview_path,
-                (210, 80),
+                (210, 72),
                 fallback_color=(60, 60, 80)
             )
 
@@ -78,21 +78,21 @@ class MapSelect(SceneBase):
             draw_panel(self.screen, rect, fill, border, 235)
 
             # Ảnh preview nhỏ
-            preview_rect = pygame.Rect(rect.x + 20, rect.y + 15, 210, 80)
+            preview_rect = pygame.Rect(rect.x + 20, rect.y + 13, 210, 72)
             self.screen.blit(preview_img, preview_rect.topleft)
             pygame.draw.rect(self.screen, COLOR_WHITE, preview_rect, 2, border_radius=6)
 
             color = COLOR_GOLD if unlocked else (145, 145, 150)
-            draw_text(self.screen, icon_text, 18, color, (rect.centerx, rect.y + 105), center=True, bold=True)
-            draw_text(self.screen, title, 26, color, (rect.centerx, rect.y + 130), center=True, bold=True)
+            draw_text(self.screen, icon_text, 17, color, (rect.centerx, rect.y + 96), center=True, bold=True)
+            draw_text(self.screen, title, 24, color, (rect.centerx, rect.y + 119), center=True, bold=True)
 
             for j, line in enumerate(desc.splitlines()):
                 draw_text(
                     self.screen,
                     line,
-                    19,
+                    15,
                     COLOR_WHITE if unlocked else (150, 150, 160),
-                    (rect.centerx, rect.y + 158 + j * 20),
+                    (rect.centerx, rect.y + 134 + j * 17),
                     center=True
                 )
 
