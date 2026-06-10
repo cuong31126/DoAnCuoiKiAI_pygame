@@ -1,9 +1,12 @@
 import os
+import logging
 
 import pygame
 
-from settings import COLOR_GOLD, COLOR_WHITE, SCREEN_HEIGHT, SCREEN_WIDTH, SFX_VOLUME
+from settings import BASE_DIR, COLOR_GOLD, COLOR_WHITE, SCREEN_HEIGHT, SCREEN_WIDTH, SFX_VOLUME
 
+
+logger = logging.getLogger(__name__)
 
 ASSET_ALIASES = {
     "assets/ui/button.png": [
@@ -46,6 +49,32 @@ ASSET_ALIASES = {
     "assets/sounds/music/magical_theme.mp3": [
         "assets/FreeMix/FreeMix/music/majestic.ogg",
     ],
+    "assets/sprites/items/old_key.png": [
+        "assets/FreeMix/FreeMix/icon/key_gold.png",
+    ],
+    "assets/sprites/items/stone_gate_locked.png": [
+        "assets/FreeMix/FreeMix/pattern/wall.png",
+        "assets/FreeMix/FreeMix/rpg/castle.png",
+    ],
+    "assets/sprites/items/stone_gate_open.png": [
+        "assets/FreeMix/FreeMix/rpg/castle.png",
+        "assets/FreeMix/FreeMix/pattern/grid.png",
+    ],
+    "assets/select/man3.png": [
+        "assets/select/man1.png",
+    ],
+    "assets/select/man4.png": [
+        "assets/select/man2.png",
+    ],
+    "assets/select/man5.png": [
+        "assets/select/man1.png",
+    ],
+    "assets/select/man6.png": [
+        "assets/select/man2.png",
+    ],
+    "assets/man1/slime-attack.gif": [
+        "assets/man1/slime-preview.gif",
+    ],
 }
 
 
@@ -60,9 +89,12 @@ class AssetManager:
     def resolve(self, path):
         candidates = [path] + ASSET_ALIASES.get(path, [])
         for candidate in candidates:
-            if candidate and os.path.exists(candidate):
-                return candidate
-        return path
+            if not candidate:
+                continue
+            resolved = candidate if os.path.isabs(candidate) else os.path.join(BASE_DIR, candidate)
+            if os.path.exists(resolved):
+                return resolved
+        return path if os.path.isabs(path) else os.path.join(BASE_DIR, path)
 
     def load_image(self, path, size=None, alpha=True, fallback_color=(80, 80, 110)):
         key = (path, size, alpha, fallback_color)
@@ -75,10 +107,12 @@ class AssetManager:
             try:
                 image = pygame.image.load(resolved)
                 image = image.convert_alpha() if alpha else image.convert()
-            except pygame.error:
+            except pygame.error as exc:
+                logger.warning("Khong load duoc image %s: %s", resolved, exc)
                 image = None
 
         if image is None:
+            logger.warning("Dung fallback image cho asset thieu/loi: %s", path)
             image = pygame.Surface(size or (80, 40), pygame.SRCALPHA)
             image.fill(fallback_color)
             pygame.draw.rect(image, (255, 255, 255), image.get_rect(), 2)
@@ -98,8 +132,11 @@ class AssetManager:
             try:
                 sound = pygame.mixer.Sound(resolved)
                 sound.set_volume(SFX_VOLUME)
-            except pygame.error:
+            except pygame.error as exc:
+                logger.warning("Khong load duoc sound %s: %s", resolved, exc)
                 sound = None
+        elif not os.path.exists(resolved):
+            logger.warning("Thieu sound asset: %s", path)
         self.sounds[path] = sound
         return sound
 
@@ -122,7 +159,8 @@ class AssetManager:
             if os.path.exists(font_path):
                 try:
                     font_obj = pygame.font.Font(font_path, size)
-                except pygame.error:
+                except pygame.error as exc:
+                    logger.warning("Khong load duoc font %s: %s", font_path, exc)
                     font_obj = None
 
         if font_obj is None:
@@ -180,6 +218,17 @@ def draw_panel(surface, rect, fill=(20, 22, 45), border=(210, 210, 240), alpha=2
     panel.fill((*fill, alpha))
     pygame.draw.rect(panel, border, panel.get_rect(), 2, border_radius=8)
     surface.blit(panel, rect.topleft)
+
+
+def blur_surface(surface, scale=0.08, passes=1):
+    """Tao hieu ung mo bang cach scale xuong va phong to lai."""
+    result = surface.copy()
+    width, height = result.get_size()
+    small_size = (max(1, int(width * scale)), max(1, int(height * scale)))
+    for _ in range(max(1, passes)):
+        result = pygame.transform.smoothscale(result, small_size)
+        result = pygame.transform.smoothscale(result, (width, height))
+    return result
 
 
 def wrap_text(text, size, max_width, bold=False):

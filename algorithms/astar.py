@@ -1,5 +1,4 @@
 import heapq
-from itertools import permutations
 
 from settings import HERO_SPEED
 from algorithms.common import merge_paths, neighbors, reconstruct_path
@@ -74,30 +73,68 @@ def astar_tsp(start, creatures, matrix, seconds_per_step=HERO_SPEED):
             pair_paths[(i, j)] = result["path"]
             pair_costs[(i, j)] = result["cost"]
 
+    creature_count = len(creatures)
+    if creature_count == 0:
+        return {
+            "safe": True,
+            "order": [],
+            "route": [start],
+            "steps": 0,
+            "eta": 0,
+            "arrival": {},
+            "reason": "An toan",
+            "pair_paths": pair_paths,
+        }
+
+    # DP Held-Karp co rang buoc deadline: state (mask, last_point)
+    # luu so buoc nho nhat de cuu tap mask va dang o last_point.
+    states = {}
+    for creature_index, creature in enumerate(creatures):
+        point_index = creature_index + 1
+        steps = pair_costs[(0, point_index)]
+        arrival_seconds = steps * seconds_per_step
+        if arrival_seconds < creature["timer"]:
+            mask = 1 << creature_index
+            states[(mask, point_index)] = {
+                "steps": steps,
+                "order": [creature_index],
+                "arrival": {creature_index: arrival_seconds},
+            }
+
+    for _ in range(1, creature_count):
+        next_states = dict(states)
+        for (mask, last_point), state in states.items():
+            for creature_index, creature in enumerate(creatures):
+                if mask & (1 << creature_index):
+                    continue
+                point_index = creature_index + 1
+                steps = state["steps"] + pair_costs[(last_point, point_index)]
+                arrival_seconds = steps * seconds_per_step
+                if arrival_seconds >= creature["timer"]:
+                    continue
+                next_mask = mask | (1 << creature_index)
+                key = (next_mask, point_index)
+                if key not in next_states or steps < next_states[key]["steps"]:
+                    arrival = dict(state["arrival"])
+                    arrival[creature_index] = arrival_seconds
+                    next_states[key] = {
+                        "steps": steps,
+                        "order": state["order"] + [creature_index],
+                        "arrival": arrival,
+                    }
+        states = next_states
+
     best = None
-    # 5 sinh vat nen duyet permutation van nhanh va de tin cay.
-    for order in permutations(range(1, len(points))):
-        current = 0
-        steps = 0
-        arrival = {}
-        feasible = True
-        for idx in order:
-            steps += pair_costs[(current, idx)]
-            arrival_seconds = steps * seconds_per_step
-            creature = creatures[idx - 1]
-            arrival[idx - 1] = arrival_seconds
-            if arrival_seconds >= creature["timer"]:
-                feasible = False
-                break
-            current = idx
-        if not feasible:
+    all_rescued_mask = (1 << creature_count) - 1
+    for (mask, last_point), state in states.items():
+        if mask != all_rescued_mask:
             continue
-        total_steps = steps + pair_costs[(current, 0)]
+        total_steps = state["steps"] + pair_costs[(last_point, 0)]
         if best is None or total_steps < best["steps"]:
             best = {
-                "order": [idx - 1 for idx in order],
+                "order": state["order"],
                 "steps": total_steps,
-                "arrival": arrival,
+                "arrival": state["arrival"],
             }
 
     if best is None:

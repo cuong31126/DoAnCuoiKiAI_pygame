@@ -1,15 +1,14 @@
-from settings import GRID_COLS, GRID_ROWS
-
-
 BLOCKED_VALUES = {1, 2, 3, 4}
 
 
-def in_bounds(pos):
+def in_bounds(matrix, pos):
     row, col = pos
-    return 0 <= row < GRID_ROWS and 0 <= col < GRID_COLS
+    return 0 <= row < len(matrix) and 0 <= col < len(matrix[row])
 
 
 def passable(matrix, pos):
+    if not in_bounds(matrix, pos):
+        return False
     row, col = pos
     return matrix[row][col] not in BLOCKED_VALUES
 
@@ -19,7 +18,7 @@ def neighbors(matrix, pos):
     # Thu tu uu tien: phai, xuong, trai, len de duong di de nhin hon.
     for dr, dc in ((0, 1), (1, 0), (0, -1), (-1, 0)):
         nxt = (row + dr, col + dc)
-        if in_bounds(nxt) and passable(matrix, nxt):
+        if passable(matrix, nxt):
             yield nxt
 
 

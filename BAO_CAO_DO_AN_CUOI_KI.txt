@@ -1,0 +1,700 @@
+BAO CAO DO AN CUOI KI
+
+Ten du an: AI Hospital Dispatcher
+Loai do an: Game mo phong AI bang Pygame
+Chu de AI: Tim duong, lap ke hoach, rang buoc, tim kiem doi khang va ra quyet dinh trong moi truong dong
+
+============================================================
+1. GIOI THIEU
+============================================================
+
+AI Hospital Dispatcher la mot game mo phong robot dieu phoi trong benh vien. Agent la mot robot/hero co nhiem vu di chuyen trong ban do dang luoi, thuc hien cac task y te nhu giao thuoc, ho tro benh nhan, lay mau xet nghiem, uu tien ca khan cap va tranh cac vat can dong.
+
+Nguoi choi khong dieu khien robot bang tay tung buoc, ma chon thuat toan AI cho tung level. Sau khi bam RUN, game goi thuat toan tuong ung, tao duong di, hien thi ket qua tren luoi va cap nhat cac thong so nhu pin, timer, score, task hoan thanh, path length, total cost, nodes expanded va runtime.
+
+Do an tap trung vao viec minh hoa cach cac nhom thuat toan AI khac nhau giai quyet cung mot bai toan dieu phoi trong benh vien:
+- Tim duong co ban.
+- Tim duong co heuristic.
+- Toi uu trong dieu kien pin gioi han.
+- Lap ke hoach lai khi moi truong thay doi.
+- Giai bai toan co rang buoc deadline/priority.
+- Ra quyet dinh trong tinh huong co rui ro va doi khang.
+
+============================================================
+2. MUC TIEU DO AN
+============================================================
+
+Muc tieu chinh:
+- Xay dung mot moi truong benh vien 2D dang grid de robot co the di chuyen.
+- Cai dat 18 thuat toan AI, chia thanh 6 nhom, moi level co 3 thuat toan.
+- Cho phep nguoi dung chon thuat toan, chay mo phong va so sanh ket qua.
+- The hien ro cac chi so danh gia: path found, nodes expanded, path length, cost, runtime, battery, collision va re-plan.
+- Mo phong cac tinh huong thanh cong va that bai: tim duoc duong, khong tim duoc duong, het pin, het thoi gian, bi vat can dong chan duong.
+- Tao giao dien de nguoi xem thay duoc khac biet giua cac nhom thuat toan.
+
+Ket qua mong muon:
+- Tat ca 6 level co the chay duoc.
+- Moi level the hien dung muc tieu AI rieng.
+- Man hinh ANALYZE co the so sanh 3 thuat toan cua level hien tai.
+- Agent co hanh vi hop ly hon khi gap pin gioi han, deadline va vat can dong.
+
+============================================================
+3. MO TA HE THONG
+============================================================
+
+3.1. Cau truc chuong trinh
+
+- main.py:
+  Diem chay chinh cua game. Khoi tao Game va bat dau vong lap Pygame.
+
+- settings.py:
+  Chua cau hinh chung nhu kich thuoc man hinh, tile size, FPS, mau sac, am luong, vi tri grid, kich thuoc sprite.
+
+- core/:
+  Chua cac lop nen tang nhu Game, SceneBase, GameManager, Robot, Map, UI, Animation va AssetManager.
+
+- algorithms/:
+  Chua cac thuat toan AI. Moi file phu trach mot nhom:
+  + uninformed.py: BFS, DFS, UCS.
+  + informed.py: A*, Greedy Best-First, Weighted A*, Online Re-planning A*, Partial Observation, Constraint Propagation.
+  + local_search.py: Simple Hill Climbing, Stochastic Hill Climbing, Simulated Annealing.
+  + csp.py: Backtracking Search, Min-Conflicts, Constraint Graph.
+  + adversarial.py: Minimax, Alpha-Beta Pruning, Expectimax.
+
+- maps/hospital_dispatcher/:
+  Chua scene chinh cua game benh vien. Phu trach ve grid, hero, task, vat can dong, HUD, nut RUN/STOP/ANALYZE/RESET, va xu ly trang thai READY/RUNNING/PAUSED/COMPLETED/FAILED.
+
+- scenes/:
+  Chua main menu va map select.
+
+- ui/:
+  Chua HUD hien thi dispatch status va bang analyze.
+
+- tests/:
+  Chua unit test cho cac thuat toan tim duong va truong hop safe/unsafe.
+
+3.2. Luong chay chinh
+
+1. Nguoi choi vao menu chinh.
+2. Chon man choi hoac bam BAT DAU.
+3. Trong level, nguoi choi chon thuat toan o thanh duoi.
+4. Bam RUN.
+5. HospitalScene goi AlgorithmManager.run_algorithm().
+6. AlgorithmManager dua vao level va ten thuat toan de goi ham xu ly dung.
+7. Ket qua tra ve gom path, visited, cost, path_length, nodes_expanded, runtime_ms, success va message.
+8. Robot di theo path tung buoc. Khi den task thi danh dau completed.
+9. Neu gap vat can dong, het pin, het gio hoac khong tim duoc path thi chuyen sang FAILED.
+10. Neu hoan thanh tat ca task thi chuyen sang COMPLETED.
+
+============================================================
+4. PEAS CUA AGENT
+============================================================
+
+Agent: Robot dieu phoi y te trong benh vien.
+
+4.1. Performance Measure - Tieu chi danh gia
+
+- Hoan thanh tat ca task trong level.
+- Den dung vi tri task can thuc hien.
+- Uu tien task khan cap va task co deadline.
+- Giam tong cost va path length.
+- Giam so lan collision voi vat can dong.
+- Khong de pin ve 0.
+- Khong vuot qua time limit cua level.
+- Giam so lan re-plan khong can thiet.
+- Runtime cua thuat toan nho, nodes expanded hop ly.
+- Trong bang ANALYZE, thuat toan tot la thuat toan co success=True, cost thap, path length ngan, nodes expanded va runtime hop ly.
+
+4.2. Environment - Moi truong
+
+- Ban do benh vien dang luoi 20x15.
+- Moi o co the la:
+  + floor: o san co the di.
+  + wall: tuong khong the di.
+  + weighted: o co cost cao hon binh thuong.
+  + charge: tram sac pin.
+  + task: vi tri nhiem vu.
+  + dynamic obstacle: vat can di dong.
+- Moi truong co the tinh hoac dong tuy level.
+- Level sau co nhieu rang buoc hon level truoc: nhieu task, pin gioi han, deadline, priority, vat can dong, bat dinh va game search.
+
+4.3. Actuators - Hanh dong cua agent
+
+- Di len, xuong, trai, phai trong grid.
+- Chon duong di theo path ma thuat toan tao ra.
+- Sac pin khi dung tren tram CHG.
+- Re-plan khi path bi vat can dong chan.
+- Chon task tiep theo.
+- Dung lai bang STOP/PAUSED.
+- Reset level hoac quay ve menu theo dieu khien nguoi dung.
+
+4.4. Sensors - Cam bien/thong tin agent nhan duoc
+
+- Vi tri hien tai cua robot.
+- Ban do grid va trang thai cac o.
+- Danh sach task con lai.
+- Deadline va priority cua task.
+- Pin hien tai va pin toi da.
+- Thoi gian da chay va time limit.
+- Vi tri vat can dong hien tai.
+- Mot so thuat toan con dung vi tri du doan cua vat can.
+- Trang thai path hien tai, path_index, collision, replan_count.
+
+4.5. PEAS theo tung level
+
+- Level 1 - Basic Delivery:
+  P: Tim duong den 1 task voi so buoc/cost hop ly.
+  E: Grid co wall va weighted tile.
+  A: Di chuyen theo path.
+  S: Vi tri robot, vi tri task, grid.
+
+- Level 2 - Multi Patient Delivery:
+  P: Hoan thanh nhieu task voi tong route hop ly.
+  E: Nhieu task trong cung ban do.
+  A: Sap xep thu tu task va di chuyen.
+  S: Danh sach task con lai, cost, vi tri hien tai.
+
+- Level 3 - Battery Optimization:
+  P: Hoan thanh task trong gioi han pin.
+  E: Pin gioi han, co tram sac.
+  A: Di task hoac di tram sac khi can.
+  S: Pin hien tai, khoang cach den task/tram sac.
+
+- Level 4 - Dynamic Obstacles:
+  P: Hoan thanh task khi co vat can di dong.
+  E: Vat can thay doi vi tri theo thoi gian.
+  A: Di chuyen va lap ke hoach lai.
+  S: Vi tri vat can hien tai/du doan, path hien tai.
+
+- Level 5 - Emergency Priority CSP:
+  P: Uu tien task khan cap, giam vi pham deadline.
+  E: Nhieu task co priority/deadline.
+  A: Sap xep task theo rang buoc.
+  S: Deadline, priority, route cost, completed task.
+
+- Level 6 - Hospital Crisis:
+  P: Chon hanh dong co utility tot trong tinh huong rui ro, van dam bao pin.
+  E: Moi truong co vat can dong va tinh huong bat dinh.
+  A: Chon go_to_task, go_to_charge, wait, replan, prioritize_emergency.
+  S: Pin hien tai, task con lai, rui ro moi truong, duong di kha thi.
+
+============================================================
+5. 18 THUAT TOAN VA CACH CHAY TRONG GAME
+============================================================
+
+Tong cong co 18 thuat toan, chia thanh 6 level, moi level 3 thuat toan. Tat ca duoc dieu phoi thong qua AlgorithmManager. Khi nguoi choi chon nut thuat toan va bam RUN, scene se dua ten thuat toan, vi tri robot va mot so thong tin nhu pin hien tai vao AlgorithmManager de chay.
+
+------------------------------------------------------------
+5.1. Level 1 - Uninformed Search
+------------------------------------------------------------
+
+1. BFS - Breadth-First Search
+
+Nguyen ly:
+BFS dung queue FIFO, mo rong cac node theo tung lop. Node nao gan start ve so buoc se duoc xet truoc.
+
+Cach chay trong game:
+Level 1 co 1 task chinh. BFS nhan start va goal, duyet cac o theo thu tu phai, xuong, trai, len. Khi gap goal thi reconstruct path. BFS phu hop voi grid khong trong so vi tim duoc duong ngan nhat theo so buoc.
+
+Uu diem:
+- De hieu, dam bao tim duoc duong neu co path.
+- Tim duong ngan nhat theo so buoc trong do thi khong trong so.
+
+Han che:
+- Khong toi uu cost neu co weighted tile.
+- Co the mo rong nhieu node.
+
+2. DFS - Depth-First Search
+
+Nguyen ly:
+DFS uu tien di sau vao mot nhanh truoc khi quay lui. Co the cai dat bang stack hoac de quy.
+
+Cach chay trong game:
+DFS duyet tu start den goal theo huong uu tien. Khi gap ngo cut hoac khong di tiep, DFS quay lui de thu nhanh khac. Trong game DFS giup minh hoa cach tim kiem sau, khac voi BFS duyet theo lop.
+
+Uu diem:
+- Bo nho thap hon BFS trong nhieu truong hop.
+- De minh hoa backtracking trong tim duong.
+
+Han che:
+- Khong dam bao duong ngan nhat.
+- Co the di vong lau neu khong gioi han/kiem soat visited.
+
+3. UCS - Uniform Cost Search
+
+Nguyen ly:
+UCS dung priority queue theo tong cost da di. Node co accumulated cost nho nhat duoc mo rong truoc.
+
+Cach chay trong game:
+Trong grid co weighted tile cost cao hon o thuong. UCS khong chi dem so buoc ma tinh tong cost. Neu duong dai hon nhung tranh weighted tile, UCS co the chon duong do vi cost tong thap hon.
+
+Uu diem:
+- Toi uu duong di theo cost.
+- Phu hop khi moi o co chi phi khac nhau.
+
+Han che:
+- Co the mo rong nhieu node neu khong co heuristic.
+
+------------------------------------------------------------
+5.2. Level 2 - Informed Search
+------------------------------------------------------------
+
+4. A* Search
+
+Nguyen ly:
+A* danh gia node bang f(n) = g(n) + h(n). Trong do g la cost tu start den node, h la uoc luong tu node den goal. Project dung Manhattan distance lam heuristic.
+
+Cach chay trong game:
+Level 2 co nhieu task. A* xay route qua cac task bang cach chon task tiep theo dua tren khoang cach va priority, sau do tim path bang A*. Ket qua thuong can bang giua cost va so node duyet.
+
+Uu diem:
+- Neu heuristic hop ly, A* vua nhanh vua cho duong tot.
+- Phu hop map grid.
+
+Han che:
+- Ket qua phu thuoc heuristic.
+- Neu heuristic khong tot co the gan UCS.
+
+5. Greedy Best-First Search
+
+Nguyen ly:
+Greedy Best-First chi uu tien h(n), tuc node nao co ve gan goal hon thi di truoc.
+
+Cach chay trong game:
+Greedy chon duong dua vao Manhattan distance den task. No co xu huong lao nhanh ve muc tieu gan nhat ve heuristic, khong can nhac cost da di nhieu nhu A*.
+
+Uu diem:
+- Thuong nhanh, duyet it node.
+- De minh hoa chien luoc "tham lam".
+
+Han che:
+- Khong dam bao duong toi uu.
+- Co the chon duong co cost cao neu weighted tile nam tren huong gan goal.
+
+6. Weighted A*
+
+Nguyen ly:
+Weighted A* dung f(n) = g(n) + w*h(n), voi w > 1. Heuristic duoc nhan trong so lon hon de day nhanh viec huong ve goal.
+
+Cach chay trong game:
+Project dung weight de thuat toan uu tien huong den task manh hon A*. Weighted A* co the nhanh hon A* nhung doi khi cost cao hon.
+
+Uu diem:
+- Giam nodes expanded trong nhieu truong hop.
+- Phu hop khi can toc do hon toi uu tuyet doi.
+
+Han che:
+- Duong di co the khong toi uu bang A*.
+
+------------------------------------------------------------
+5.3. Level 3 - Local Search va Battery Optimization
+------------------------------------------------------------
+
+7. Simple Hill Climbing
+
+Nguyen ly:
+Hill Climbing luon chon buoc/ung vien tot hon trang thai hien tai theo ham danh gia. Neu khong co buoc tot hon, no co the dung lai.
+
+Cach chay trong game:
+Level 3 tap trung vao pin. Thuat toan danh gia task tiep theo dua tren khoang cach, priority va kha nang pin. Neu direct path vuot pin, no se chen tram sac neu co duong hop le.
+
+Uu diem:
+- Don gian, nhanh, de giai thich.
+- Phu hop mo phong toi uu cuc bo.
+
+Han che:
+- Co the ket o local optimum.
+- Khong dam bao route toan cuc tot nhat.
+
+8. Stochastic Hill Climbing
+
+Nguyen ly:
+Thay vi luon chon buoc tot nhat, Stochastic Hill Climbing chon ngau nhien trong cac buoc co xu huong cai thien.
+
+Cach chay trong game:
+No tao su khac biet so voi Simple Hill Climbing bang viec giam tinh "co dinh" cua quyet dinh. Khi co nhieu task kha thi, cach chon co yeu to ngau nhien giup mo phong nhieu route khac nhau.
+
+Uu diem:
+- It bi lap lai mot quyet dinh duy nhat.
+- Co kha nang tranh mot so local optimum nho.
+
+Han che:
+- Ket qua co the thay doi giua cac lan chay.
+- Khong dam bao toi uu.
+
+9. Simulated Annealing
+
+Nguyen ly:
+Simulated Annealing cho phep chap nhan trang thai xau hon voi xac suat phu thuoc temperature. Nhiet do cao thi de thu nghiem, nhiet do thap thi hoi tu.
+
+Cach chay trong game:
+Thuat toan danh gia cac route ung vien trong bai toan pin/task. No co the chap nhan route tam thoi xau hon de tranh bi ket cuc bo, sau do dan hoi tu ve route tot.
+
+Uu diem:
+- Co kha nang thoat local optimum.
+- Minh hoa tu duy toi uu hoa xac suat.
+
+Han che:
+- Phu thuoc tham so temperature/cooling.
+- Runtime va ket qua co the khong on dinh bang deterministic search.
+
+------------------------------------------------------------
+5.4. Level 4 - Dynamic Environment
+------------------------------------------------------------
+
+10. Online Re-planning A*
+
+Nguyen ly:
+Thay vi chi lap ke hoach mot lan, Online Re-planning A* theo doi moi truong va tinh lai duong khi co vat can dong chan path.
+
+Cach chay trong game:
+Robot co path ban dau. Neu vat can dong di vao cac o tuong lai cua path, scene goi replan_from_current(). Thuat toan tinh lai path tu vi tri hien tai, tranh cac vat can dang quan sat.
+
+Uu diem:
+- Phu hop moi truong dong.
+- Co the phan ung voi thay doi bat ngo.
+
+Han che:
+- Re-plan nhieu lan co the tang runtime.
+- Chi tot neu thong tin vat can duoc cap nhat kip thoi.
+
+11. Partial Observation
+
+Nguyen ly:
+Agent khong biet toan bo moi truong dong, chi biet cac vat can trong vung quan sat.
+
+Cach chay trong game:
+Thuat toan dung visible_cells quanh vi tri robot. Cac vat can ngoai vung nhin co the khong duoc tinh day du. Dieu nay mo phong robot co cam bien gioi han.
+
+Uu diem:
+- Gan voi bai toan thuc te khi sensor khong hoan hao.
+- Giam so thong tin can xu ly.
+
+Han che:
+- Co the lap path qua vung sau nay moi phat hien bi chan.
+- Can re-plan khi thong tin moi xuat hien.
+
+12. Constraint Propagation
+
+Nguyen ly:
+Constraint Propagation loai tru cac trang thai/o khong hop le dua tren rang buoc du doan.
+
+Cach chay trong game:
+Project du doan vi tri vat can trong mot so buoc tiep theo. Cac o du doan bi chiem duoc xem nhu blocked, sau do tim path tranh chung.
+
+Uu diem:
+- Giam rui ro va cham.
+- Chu dong tranh vat can trong tuong lai.
+
+Han che:
+- Neu du doan sai, co the tranh qua nhieu o khong can thiet.
+- Path co the dai hon.
+
+------------------------------------------------------------
+5.5. Level 5 - CSP va Constraint Search
+------------------------------------------------------------
+
+13. Backtracking Search
+
+Nguyen ly:
+Backtracking thu gan thu tu task/route, neu mot lua chon gay vi pham rang buoc thi quay lui de thu lua chon khac.
+
+Cach chay trong game:
+Level 5 co task khan cap, deadline va priority. Backtracking thu cac thu tu task, tinh route cost va kiem tra deadline/priority. Neu thu tu hien tai khong hop le, no quay lui.
+
+Uu diem:
+- Dam bao thu nghiem co he thong.
+- De giai thich voi bai toan rang buoc.
+
+Han che:
+- Co the ton thoi gian khi so task/rang buoc tang.
+
+14. Min-Conflicts
+
+Nguyen ly:
+Min-Conflicts bat dau tu mot loi giai ung vien, sau do sua cac bien dang gay vi pham de giam tong so xung dot.
+
+Cach chay trong game:
+Thuat toan danh gia route/task order theo so vi pham deadline, priority hoac cost. No uu tien thay doi lua chon gay conflict de tim route it vi pham nhat.
+
+Uu diem:
+- Hieu qua voi bai toan CSP co nhieu rang buoc.
+- Thich hop khi can cai thien loi giai nhanh.
+
+Han che:
+- Co the ket o loi giai chua toi uu.
+- Ket qua phu thuoc cach tinh conflict.
+
+15. Constraint Graph
+
+Nguyen ly:
+Bai toan duoc mo hinh hoa thanh do thi rang buoc. Cac task la node, quan he deadline/priority/cost la rang buoc can thoa.
+
+Cach chay trong game:
+Thuat toan danh gia quan he giua cac task va tim thu tu hoan thanh co conflict thap. No phu hop de minh hoa cach bien bai toan dispatch thanh bai toan do thi.
+
+Uu diem:
+- Mo hinh hoa ro quan he giua task.
+- De mo rong neu them nhieu constraint.
+
+Han che:
+- Can dinh nghia constraint chat che.
+- Neu graph phuc tap, viec tim loi giai co the ton thoi gian.
+
+------------------------------------------------------------
+5.6. Level 6 - Adversarial / Decision Search
+------------------------------------------------------------
+
+16. Minimax
+
+Nguyen ly:
+Minimax gia dinh moi truong/doi thu se chon ket qua xau nhat cho agent. Agent chon hanh dong co gia tri tot nhat trong truong hop xau nhat.
+
+Cach chay trong game:
+Level 6 co cac action: go_to_task, go_to_charge, wait, replan, prioritize_emergency. Moi action duoc danh gia trong cac trang thai moi truong clear/crowded/blocked. Minimax lay utility te nhat cua moi action, sau do chon action co worst-case cao nhat.
+
+Uu diem:
+- Can than voi rui ro.
+- Phu hop tinh huong khan cap co bat dinh.
+
+Han che:
+- Co the qua bao thu neu moi truong thuc te khong qua xau.
+
+17. Alpha-Beta Pruning
+
+Nguyen ly:
+Alpha-Beta la toi uu cua Minimax. No cat bot nhanh khong can xet khi biet chac nhanh do khong the lam ket qua tot hon.
+
+Cach chay trong game:
+Thuat toan dung cung model voi Minimax nhung co alpha va beta de giam nodes expanded. Ket qua quyet dinh thuong giong Minimax, nhung so node phai xet co the thap hon.
+
+Uu diem:
+- Giu chat luong quyet dinh cua Minimax.
+- Giam so node can mo rong.
+
+Han che:
+- Hieu qua phu thuoc thu tu xet action.
+
+18. Expectimax
+
+Nguyen ly:
+Expectimax khong gia dinh moi truong luon chon xau nhat. No gan xac suat cho moi trang thai moi truong va tinh expected utility.
+
+Cach chay trong game:
+Moi truong duoc mo hinh hoa bang cac trang thai clear, crowded, blocked voi xac suat khac nhau. Expectimax tinh tong utility co trong so xac suat va chon action co ky vong cao nhat.
+
+Uu diem:
+- Bot bao thu hon Minimax.
+- Phu hop khi moi truong co tinh xac suat.
+
+Han che:
+- Phu thuoc vao xac suat uoc luong.
+- Neu xac suat sai, quyet dinh co the kem an toan.
+
+============================================================
+6. MO TA CAC LEVEL VA KET QUA MONG DOI
+============================================================
+
+Level 1 - Basic Delivery
+- Thuat toan: BFS, DFS, UCS.
+- Nhiem vu: Den task T1.
+- Ket qua mong doi: success neu co duong di tu start den T1.
+- Fail khi: map bi chan hoan toan hoac khong reconstruct duoc path.
+
+Level 2 - Multi Patient Delivery
+- Thuat toan: A* Search, Greedy Best-First, Weighted A*.
+- Nhiem vu: Di qua nhieu task.
+- Ket qua mong doi: success neu route qua tat ca task duoc tao.
+- Fail khi: co task khong the den duoc.
+
+Level 3 - Battery Optimization
+- Thuat toan: Simple Hill Climbing, Stochastic Hill Climbing, Simulated Annealing.
+- Nhiem vu: Hoan thanh nhieu task voi pin gioi han.
+- Ket qua mong doi: success neu robot biet chen tram sac khi duong den task vuot pin.
+- Fail khi: pin ve 0 truoc khi den tram sac/task hoac khong co tram sac kha thi.
+
+Level 4 - Dynamic Obstacles
+- Thuat toan: Online Re-planning A*, Partial Observation, Constraint Propagation.
+- Nhiem vu: Hoan thanh task trong moi truong co vat can dong.
+- Ket qua mong doi: success neu agent re-plan kip khi path bi chan.
+- Fail khi: vat can dong lam tat ca duong kha thi bi chan hoac re-plan khong tim duoc path.
+
+Level 5 - Emergency Priority CSP
+- Thuat toan: Backtracking Search, Min-Conflicts, Constraint Graph.
+- Nhiem vu: Xu ly task co deadline/priority, dac biet task khan cap.
+- Ket qua mong doi: success neu route thoa rang buoc chinh va giam conflict.
+- Fail khi: deadline khong the dap ung hoac route gay conflict khong chap nhan duoc.
+
+Level 6 - Hospital Crisis
+- Thuat toan: Minimax, Alpha-Beta Pruning, Expectimax.
+- Nhiem vu: Ra quyet dinh trong tinh huong bat dinh, co vat can dong va pin gioi han.
+- Ket qua mong doi: success neu planner biet can bang giua task khan cap, risk va pin hien tai.
+- Ghi chu kiem thu: Level 6 tung co loi fail do utility chi nhin battery_limit thay vi battery hien tai. Sau khi truyen battery hien tai vao planner, Minimax, Alpha-Beta va Expectimax deu hoan thanh duoc level trong mo phong mac dinh.
+
+============================================================
+7. KIEM THU
+============================================================
+
+7.1. Unit test tu dong
+
+File test chinh: tests/test_algorithms.py
+
+Nhom test 1 - Valid path tren grid khong mac dinh:
+- BFS, DFS, UCS duoc test tren ma tran 3x4.
+- Dieu kien pass:
+  + result["success"] = True.
+  + path bat dau dung start.
+  + path ket thuc dung goal.
+  + Moi o tren path khong nam trong BLOCKED_VALUES.
+  + Moi buoc di co Manhattan distance = 1.
+
+Nhom test 2 - A* valid path:
+- A* duoc test tren cung ma tran.
+- Dieu kien pass tuong tu BFS/DFS/UCS.
+
+Nhom test 3 - Start bang goal:
+- BFS, DFS, UCS, A* duoc test voi start == goal.
+- Dieu kien pass:
+  + success=True.
+  + path chi gom [start].
+  + cost=0.
+
+Nhom test 4 - No path:
+- Tao ma tran bi chan.
+- BFS, DFS, UCS, A* phai tra ve:
+  + success=False.
+  + path=[].
+- Day la test fail co chu dich de dam bao thuat toan khong bao sai la tim duoc duong.
+
+Nhom test 5 - A* TSP safe/unsafe:
+- Truong hop safe:
+  + A* TSP phai tim duoc route di qua cac muc tieu va quay ve base truoc timer.
+  + result["safe"] = True.
+- Truong hop unsafe:
+  + Timer qua ngan nen khong the cuu kip.
+  + result["safe"] = False.
+  + route=[].
+
+7.2. Kiem thu giao dien
+
+Main Menu:
+- Kiem tra render background blur, panel, anh bac si, nut BAT DAU, CHON MAN, THOAT.
+- Ket qua: success neu nut bam dung scene va khong crash khi load asset.
+
+Map Select:
+- Kiem tra hien thi 6 card level.
+- Kiem tra nut DONG quay ve main menu.
+- Kiem tra bam CHOI mo dung level.
+- Ket qua: success neu tat ca level vao duoc va preview render dung.
+
+Hospital Scene:
+- Kiem tra grid, wall, floor, weighted tile, charge station, task, hero, vat can dong.
+- Kiem tra RUN tao path va robot di theo path.
+- Kiem tra STOP dua state ve PAUSED va RUN tiep tuc.
+- Kiem tra RESET reset pin, task, timer va path.
+- Kiem tra ANALYZE hien bang so sanh 3 thuat toan cua level hien tai.
+
+7.3. Kiem thu tung level - ket qua tong hop
+
+Level 1:
+- Test success: BFS/DFS/UCS deu tao duoc path den T1 neu map mac dinh khong bi chan.
+- Test fail: Neu goal bi chan boi wall thi result success=False.
+
+Level 2:
+- Test success: A*, Greedy va Weighted A* tao duoc route qua nhieu task.
+- Nhan xet: A* can bang cost va heuristic, Greedy nhanh nhung co the khong toi uu, Weighted A* uu tien toc do.
+
+Level 3:
+- Test success: Local search co the chen tram sac khi can.
+- Test fail: Neu pin qua thap va khong den duoc tram sac thi state FAILED do Battery depleted.
+
+Level 4:
+- Test success: Khi vat can dong chan duong, game goi re-plan va tiep tuc chay neu co path moi.
+- Test fail: Neu re-plan khong tim duoc path hop le thi state FAILED.
+
+Level 5:
+- Test success: Cac thuat toan CSP tao route co xet deadline/priority.
+- Test fail: Neu deadline bat kha thi thi so conflict/vi pham tang va route co the bi danh gia khong dat.
+
+Level 6:
+- Test success: Minimax, Alpha-Beta Pruning va Expectimax deu hoan thanh tat ca task trong mo phong mac dinh sau khi da xet battery hien tai.
+- Test fail cu: Phien ban cu co the fail sau khi hoan thanh E1, T1, T2 vi robot pin thap nhung van chon di task xa thay vi di sac.
+- Ket qua sau sua: Planner co battery-aware utility, neu duong den task vuot pin hien tai thi action bi phat nang; action go_to_charge duoc uu tien khi pin thap. Vi vay level 6 hoan thanh on dinh hon.
+
+7.4. Cac trang thai fail trong game
+
+- Path not found:
+  Xay ra khi thuat toan khong tim duoc duong den task/tram sac.
+
+- Battery depleted:
+  Xay ra khi robot.battery <= 0.
+
+- Time limit reached:
+  Xay ra khi elapsed >= time_limit.
+
+- Collision risk / re-plan failed:
+  Xay ra khi vat can dong chan path va thuat toan khong tim duoc path thay the.
+
+7.5. Cac trang thai success trong game
+
+- Task completed:
+  Robot den dung vi tri task va task duoc danh dau completed.
+
+- Battery charged:
+  Robot den tram CHG va pin duoc reset ve max_battery.
+
+- Level completed:
+  Tat ca task trong map deu completed.
+
+============================================================
+8. DANH GIA KET QUA
+============================================================
+
+Ket qua dat duoc:
+- Xay dung duoc game AI co menu, chon level, HUD, grid, asset va he thong thuat toan.
+- Cai dat du 18 thuat toan theo 6 nhom AI.
+- Co the so sanh thuat toan bang bang ANALYZE.
+- Co co che RUN/STOP/RESET/LEVELS/MENU.
+- Co co che state READY/RUNNING/PAUSED/COMPLETED/FAILED.
+- Co unit test cho cac truong hop tim duong thanh cong, start=goal va khong co duong.
+- Co manual test cho cac level va da sua loi level 6 lien quan den pin.
+
+Nhan xet theo nhom thuat toan:
+- Uninformed search phu hop minh hoa nen tang tim kiem.
+- Informed search cho thay vai tro heuristic trong viec giam node mo rong.
+- Local search phu hop bai toan toi uu cuc bo va battery planning.
+- Dynamic replanning phu hop moi truong co vat can dong.
+- CSP phu hop task co deadline, priority va rang buoc.
+- Adversarial/decision search phu hop tinh huong co rui ro va bat dinh.
+
+Han che:
+- Mot so thuat toan duoc dieu chinh theo bai toan game, khong phai ban hoc thuat day du nhat.
+- Heuristic va utility con don gian.
+- Vat can dong co pattern co dinh, chua co AI rieng.
+- Chua co test tu dong cho toan bo scene Pygame.
+- Chua co logging chi tiet tung buoc de xuat report tu dong.
+
+============================================================
+9. HUONG PHAT TRIEN
+============================================================
+
+- Them test tu dong cho gameplay cua ca 6 level.
+- Them log tung buoc cua robot: position, battery, task, action, replan reason.
+- Cai tien utility cua level 6 de tinh ca score, deadline con lai va rui ro vat can.
+- Them nhieu loai vat can dong co hanh vi rieng.
+- Them che do xem lai replay path.
+- Them file ket qua benchmark cho ANALYZE.
+- Cai tien UI de hien thi path theo mau rieng cho visited/path/current.
+- Bo sung thuat toan nang cao hon: D* Lite, MCTS, Genetic Algorithm, Q-Learning.
+
+============================================================
+10. KET LUAN
+============================================================
+
+Do an AI Hospital Dispatcher da hoan thanh muc tieu mo phong mot agent dieu phoi y te trong benh vien. He thong cho phep nguoi dung quan sat cach 18 thuat toan AI khac nhau tim duong, lap ke hoach, xu ly rang buoc, phan ung voi vat can dong va ra quyet dinh trong tinh huong bat dinh.
+
+Thong qua PEAS, agent duoc mo hinh hoa ro ve performance, environment, actuators va sensors. Thong qua cac level, do an the hien duoc su khac nhau giua cac nhom thuat toan: uninformed search, informed search, local search, dynamic replanning, CSP va adversarial/decision search.
+
+Phan kiem thu cho thay he thong co cac truong hop success va fail ro rang. Cac thuat toan co the tim duong khi map kha thi, bao fail khi khong co path, va game co co che fail khi het pin/het gio. Level 6 ban dau co loi do chua tinh pin hien tai trong utility, nhung da duoc sua bang cach truyen battery hien tai vao planner va phat nang action vuot qua pin hien co. Sau sua, level 6 co the hoan thanh voi ca Minimax, Alpha-Beta Pruning va Expectimax.
+
+Nhin chung, do an dat yeu cau cua mot game mo phong AI co tinh truc quan, co nhieu thuat toan, co PEAS ro rang va co kiem thu cac tinh huong thanh cong/that bai.

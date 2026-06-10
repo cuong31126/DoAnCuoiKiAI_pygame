@@ -33,9 +33,10 @@ class AlgorithmManager:
     def get_algorithms(self, level=None):
         return list(self.LEVEL_ALGORITHMS.get(level or self.hospital_map.level, []))
 
-    def run_algorithm(self, name, start=None):
+    def run_algorithm(self, name, start=None, battery=None):
         hospital_map = self.hospital_map
         start = start or hospital_map.start
+        battery = hospital_map.battery_limit if battery is None else battery
         tasks = hospital_map.remaining_tasks()
         if not tasks:
             return self._empty_success(name, start)
@@ -78,13 +79,13 @@ class AlgorithmManager:
             return constraint_graph_search(hospital_map, start, tasks)
 
         if name == "Minimax":
-            return minimax_search(hospital_map, start, tasks)
+            return minimax_search(hospital_map, start, tasks, battery=battery)
         if name == "Alpha-Beta Pruning":
-            return alpha_beta_search(hospital_map, start, tasks)
-        return expectimax_search(hospital_map, start, tasks)
+            return alpha_beta_search(hospital_map, start, tasks, battery=battery)
+        return expectimax_search(hospital_map, start, tasks, battery=battery)
 
-    def analyze_all(self, start=None):
-        return [self.run_algorithm(name, start=start) for name in self.get_algorithms()]
+    def analyze_all(self, start=None, battery=None):
+        return [self.run_algorithm(name, start=start, battery=battery) for name in self.get_algorithms()]
 
     def _best_task(self, start, tasks):
         def score(task):

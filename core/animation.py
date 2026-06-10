@@ -1,8 +1,12 @@
 import os
+import logging
 
 import pygame
 
-from settings import TILE_SIZE
+from settings import BASE_DIR, TILE_SIZE
+
+
+logger = logging.getLogger(__name__)
 
 
 class GIFAnimation:
@@ -30,34 +34,46 @@ class GIFAnimation:
             self.frames = [surf]
 
     def _scale(self, image):
-        return pygame.transform.scale(image.convert_alpha(), self.size)
+        try:
+            image = image.convert_alpha()
+        except pygame.error:
+            image = image.copy()
+        return pygame.transform.scale(image, self.size)
+
+    def _resolve_path(self, path):
+        return path if os.path.isabs(path) else os.path.join(BASE_DIR, path)
 
     def _load_candidate(self, path):
-        if not path or not os.path.exists(path):
+        if not path:
+            return []
+        resolved = self._resolve_path(path)
+        if not os.path.exists(resolved):
             return []
 
-        if os.path.isdir(path):
+        if os.path.isdir(resolved):
             files = sorted(
-                os.path.join(path, name)
-                for name in os.listdir(path)
+                os.path.join(resolved, name)
+                for name in os.listdir(resolved)
                 if name.lower().endswith((".png", ".jpg", ".jpeg", ".gif"))
             )
             return [self._scale(pygame.image.load(file)) for file in files]
 
-        if path.lower().endswith(".gif"):
-            frames = self._load_gif_with_pillow(path)
+        if resolved.lower().endswith(".gif"):
+            frames = self._load_gif_with_pillow(resolved)
             if frames:
                 return frames
 
         try:
-            return [self._scale(pygame.image.load(path))]
-        except pygame.error:
+            return [self._scale(pygame.image.load(resolved))]
+        except pygame.error as exc:
+            logger.warning("Khong load duoc animation frame %s: %s", resolved, exc)
             return []
 
     def _load_gif_with_pillow(self, path):
         try:
             from PIL import Image, ImageSequence
         except ImportError:
+            logger.warning("Thieu Pillow nen khong doc duoc GIF: %s", path)
             return []
 
         frames = []
@@ -68,7 +84,8 @@ class GIFAnimation:
                 raw = rgba.tobytes()
                 surf = pygame.image.fromstring(raw, rgba.size, "RGBA")
                 frames.append(self._scale(surf))
-        except Exception:
+        except Exception as exc:
+            logger.warning("Khong doc duoc GIF %s: %s", path, exc)
             return []
         return frames
 

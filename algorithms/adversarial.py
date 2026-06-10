@@ -48,21 +48,27 @@ def _action_path(hospital_map, start, tasks, action, avoid_dynamic=False):
     return astar_path(hospital_map, start, task.target, avoid=avoid)
 
 
-def _utility(hospital_map, start, tasks, action, env_state):
+def _utility(hospital_map, start, tasks, action, env_state, battery=None):
     avoid_dynamic = action in ("replan", "prioritize_emergency")
     result = _action_path(hospital_map, start, tasks, action, avoid_dynamic=avoid_dynamic)
     if not result or not result["success"]:
         return -999, result
 
     distance = result["cost"]
+    battery_budget = hospital_map.battery_limit if battery is None else battery
+    if action != "go_to_charge" and distance > battery_budget:
+        return -999 - (distance - battery_budget) * 25, result
+    if action == "go_to_charge" and distance > battery_budget:
+        return -999 - (distance - battery_budget) * 25, result
+
     target_task = _best_task(start, tasks, emergency_only=action == "prioritize_emergency")
     reward = 0 if action in ("wait", "go_to_charge") else target_task.reward + target_task.priority * 15
     emergency_bonus = 50 if action == "prioritize_emergency" and target_task.urgent else 0
     distance_penalty = distance * 4
-    battery_penalty = max(0, distance - hospital_map.battery_limit) * 8
+    battery_penalty = max(0, distance - battery_budget) * 10
     late_penalty = 60 if target_task.deadline and distance > target_task.deadline else 0
     collision_penalty = {"clear": 0, "crowded": 25, "blocked": 70}[env_state]
-    charge_bonus = 35 if action == "go_to_charge" and hospital_map.battery_limit < 65 else 0
+    charge_bonus = max(0, 45 - battery_budget) if action == "go_to_charge" else 0
     wait_penalty = 30 if action == "wait" else 0
     utility = reward + emergency_bonus + charge_bonus - distance_penalty - battery_penalty - collision_penalty - late_penalty - wait_penalty
     return utility, result
@@ -85,7 +91,7 @@ def _finish(name, started, action, utility, nodes, path_result, message):
     }
 
 
-def minimax_search(hospital_map, start, tasks):
+def minimax_search(hospital_map, start, tasks, battery=None):
     started = time.perf_counter()
     best = None
     nodes = 0
@@ -94,7 +100,7 @@ def minimax_search(hospital_map, start, tasks):
         worst_result = None
         for env_state, _prob in ENV_STATES:
             nodes += 1
-            utility, result = _utility(hospital_map, start, tasks, action, env_state)
+            utility, result = _utility(hospital_map, start, tasks, action, env_state, battery=battery)
             if worst_utility is None or utility < worst_utility:
                 worst_utility = utility
                 worst_result = result
@@ -103,7 +109,7 @@ def minimax_search(hospital_map, start, tasks):
     return _finish("Minimax", started, best[0], best[1], nodes, best[2], "Environment chooses the worst outcome.")
 
 
-def alpha_beta_search(hospital_map, start, tasks):
+def alpha_beta_search(hospital_map, start, tasks, battery=None):
     started = time.perf_counter()
     alpha = -10_000
     best = None
@@ -114,7 +120,7 @@ def alpha_beta_search(hospital_map, start, tasks):
         chosen_result = None
         for env_state, _prob in ENV_STATES:
             nodes += 1
-            utility, result = _utility(hospital_map, start, tasks, action, env_state)
+            utility, result = _utility(hospital_map, start, tasks, action, env_state, battery=battery)
             if utility < value:
                 value = utility
                 chosen_result = result
@@ -127,7 +133,7 @@ def alpha_beta_search(hospital_map, start, tasks):
     return _finish("Alpha-Beta Pruning", started, best[0], best[1], nodes, best[2], "Same game model as minimax with pruning.")
 
 
-def expectimax_search(hospital_map, start, tasks):
+def expectimax_search(hospital_map, start, tasks, battery=None):
     started = time.perf_counter()
     best = None
     nodes = 0
@@ -136,7 +142,7 @@ def expectimax_search(hospital_map, start, tasks):
         representative = None
         for env_state, probability in ENV_STATES:
             nodes += 1
-            utility, result = _utility(hospital_map, start, tasks, action, env_state)
+            utility, result = _utility(hospital_map, start, tasks, action, env_state, battery=battery)
             expected += utility * probability
             if env_state == "clear":
                 representative = result

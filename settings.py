@@ -1,5 +1,7 @@
 """Cau hinh chung cho AI Hospital Dispatcher."""
 
+import os
+
 # Kich thuoc cua so game
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
@@ -33,13 +35,14 @@ VISUALIZE_SPEED = 0.03
 TEXT_SPEED = 30
 
 # Am luong
-MUSIC_VOLUME = 0.25
-SFX_VOLUME = 0.35
+MUSIC_VOLUME = 0.05
+SFX_VOLUME = 0.22
 
 # Gioi han DFS
 DFS_MAX_DEPTH = 80
 
-# Duong dan asset chuan
+# Duong dan goc project va asset chuan
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSET_DIR = "assets"
 
 # Kich thuoc ve sprite. Hero x4 co khung 2:1 nen width se duoc tinh = HERO_DRAW_SIZE * 2.
