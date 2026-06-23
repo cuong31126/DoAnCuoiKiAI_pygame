@@ -1,0 +1,242 @@
+BAO CAO CUOI KY - AI HOSPITAL DISPATCHER
+
+Link GitHub: https://github.com/cuong31126/DoAnCuoiKiAI_pygame.git
+
+I. BAI TOAN DAT RA
+
+1. Bai toan gi
+
+AI Hospital Dispatcher la bai toan dieu phoi robot trong benh vien tren ban do luoi 20x15.
+Robot bat dau tai o START, can di den cac o benh nhan/task, tranh tuong, can nhac o trong so, tram sac, vat can dong, deadline va muc pin.
+
+Gia tri o tren ban do:
+- 0: San, cost di chuyen = 1.
+- 1: Tuong, robot khong di qua duoc.
+- 2: O trong so, cost di chuyen = 5.
+- 3: Tram sac, robot co the sac lai pin.
+
+Muc tieu cua chuong trinh la minh hoa 6 nhom thuat toan AI trong cung mot moi truong game Pygame:
+- Tim duong co ban.
+- Tim duong co heuristic.
+- Toi uu thu tu task va pin.
+- Lap ke hoach khi moi truong khong chac chan.
+- Xep lich task bang rang buoc CSP.
+- Ra quyet dinh doi khang voi moi truong dong.
+
+2. PEAS cua bai toan
+
+Performance:
+- Hoan thanh task/benh nhan.
+- Duong di ngan, cost thap.
+- It node expanded, runtime_ms nho.
+- Khong het pin, it sac lai.
+- Tranh va cham voi vat can dong.
+- Hoan thanh task co deadline/priority cao.
+
+Environment:
+- Ban do luoi 20 cot x 15 hang.
+- San, tuong, o trong so, tram sac.
+- Nhieu task/benh nhan.
+- Vat can dong o cac level cao.
+- Gioi han pin va thoi gian.
+
+Actuators:
+- Di chuyen len/xuong/trai/phai.
+- Chon task tiep theo.
+- Chon di toi tram sac.
+- Re-plan khi duong bi chan.
+
+Sensors:
+- Vi tri robot.
+- Ban do tinh.
+- Vi tri task.
+- Pin hien tai.
+- Vat can dong quan sat duoc hoac du doan duoc.
+- Deadline va priority cua task.
+
+II. THUAT TOAN AP DUNG
+
+1. Tong quan cac nhom thuat toan
+
+Level 1 - Uninformed Search:
+- BFS.
+- DFS.
+- UCS.
+
+Level 2 - Informed Search:
+- A* Search.
+- IDA*.
+- Greedy Best-First.
+
+Level 3 - Local Search / Battery Optimization:
+- Simple Hill Climbing.
+- Local Beam Search.
+- Simulated Annealing.
+
+Level 4 - Planning under Uncertainty:
+- AND-OR Search.
+- Partial Observation.
+- No Observation.
+
+Level 5 - Constraint Satisfaction Problem:
+- Backtracking Search.
+- Forward Checking.
+- Min-Conflicts.
+
+Level 6 - Adversarial Search:
+- Minimax.
+- Alpha-Beta Pruning.
+- Expectimax.
+
+2. Trang thai bat dau va trang thai muc tieu
+
+Trang thai bat dau:
+- Robot o vi tri START cua level.
+- Pin bang battery_limit cua map.
+- Danh sach task chua hoan thanh.
+- Ban do gom san, tuong, o trong so, tram sac va vat can dong neu co.
+
+Trang thai muc tieu:
+- Robot cham dung o task/benh nhan can phuc vu.
+- Voi level co nhieu task, robot tao route qua cac task theo thu tu duoc thuat toan chon.
+- Task duoc danh dau completed khi robot den dung o muc tieu.
+
+3. Trinh bay mot thuat toan trong moi nhom
+
+Nhom 1 - BFS:
+- BFS dung queue FIFO.
+- Mo rong node theo tung lop tu START.
+- Khi gap goal thi reconstruct path.
+- Dam bao duong ngan nhat theo so buoc neu moi buoc co cost bang nhau.
+
+Nhom 2 - IDA*:
+- IDA* ket hop DFS voi heuristic Manhattan.
+- Dat nguong ban dau f_limit = h(start).
+- Moi node co f(n) = g(n) + h(n).
+- Neu f(n) > f_limit thi cat tia nhanh do.
+- Sau moi vong, f_limit moi la gia tri f nho nhat da vuot nguong.
+- Lap lai den khi tim thay duong toi task.
+
+Nhom 3 - Local Beam Search:
+- Duy tri dong thoi k lo trinh tot nhat, mac dinh k = 3.
+- Moi lo trinh la mot thu tu task.
+- Sinh cac lo trinh con bang cach doi cho task.
+- Danh gia bang objective dua tren score, distance va so lan charge.
+- Chi giu lai k lo trinh tot nhat toan cuc de lap tiep.
+
+Nhom 4 - AND-OR Search:
+- OR-node dai dien cho lua chon buoc di cua robot.
+- AND-node dai dien cho cac kich ban vat can dong co the xay ra.
+- Thuat toan tao conditional plan bang cach tranh cac vi tri vat can hien tai va du doan.
+- Neu duong sap bi chan, game re-plan tu vi tri hien tai.
+
+Nhom 5 - Forward Checking:
+- Dung backtracking de xep thu tu task.
+- Moi khi gan thu mot task vao prefix, thuat toan kiem tra truoc cac task con lai.
+- Neu task tuong lai chac chan vi pham deadline hoac pin, nhanh do bi cat som.
+- Giam so nhanh phai duyet so voi backtracking thuan.
+
+Nhom 6 - Minimax:
+- Moi action cua robot duoc danh gia trong cac trang thai moi truong: clear, crowded, blocked.
+- Utility tinh reward, emergency bonus, distance penalty, collision penalty va battery penalty.
+- Utility co xet battery hien tai.
+- Khi pin yeu, action go_to_charge co diem tot hon nen duoc uu tien.
+
+III. THUC NGHIEM VA KET QUA
+
+1. Nhom thuat toan tim kiem mu thong tin
+
+Level 1 dung BFS, DFS, UCS tren cung ban do Basic Delivery:
+- BFS: tim duong ngan theo so buoc, mo rong theo lop.
+- DFS: di sau theo nhanh uu tien, co the duong dai hon BFS.
+- UCS: chon node co tong cost thap nhat, phu hop khi co o trong so.
+
+2. Anh dong cua 3 thuat toan
+
+Trong chuong trinh Pygame, khi chon tung thuat toan va bam RUN:
+- Cac node visited duoc ve bang hieu ung song loang.
+- Path cuoi cung duoc ve mau vang.
+- Robot tu dong di theo path toi task.
+
+Co the chup anh/gif demo cho cac thuat toan:
+- BFS level 1.
+- DFS level 1.
+- UCS level 1.
+- A* Search level 2.
+- IDA* level 2.
+- Greedy Best-First level 2.
+
+3. Ket qua kiem thu nhanh sau cap nhat
+
+Tat ca thuat toan trong 6 level deu tra ve cac truong bat buoc:
+- path.
+- nodes_expanded.
+- runtime_ms.
+- success.
+
+Ket qua smoke test:
+- Level 1: BFS, DFS, UCS deu success.
+- Level 2: A* Search, IDA*, Greedy Best-First deu success.
+- Level 3: Simple Hill Climbing, Local Beam Search, Simulated Annealing deu success.
+- Level 4: AND-OR Search, Partial Observation, No Observation deu success.
+- Level 5: Backtracking Search, Forward Checking, Min-Conflicts deu success.
+- Level 6: Minimax, Alpha-Beta Pruning, Expectimax deu success va co xet pin hien tai.
+
+IV. DANH GIA VA THAO LUAN
+
+1. So sanh trong tung nhom
+
+Bang so sanh tong quan:
+
+Nhom | Thuat toan | Uu diem | Nhuoc diem
+Uninformed | BFS | Duong ngan theo so buoc | Mo rong nhieu node
+Uninformed | DFS | De cai dat, it bo nho hon BFS | De di vong, khong toi uu
+Uninformed | UCS | Toi uu theo cost | Cham hon khi nhieu node
+Informed | A* | Can bang cost va heuristic | Can heuristic tot
+Informed | IDA* | It bo nho hon A*, co f-limit | Co the lap lai nhieu lan
+Informed | Greedy | Nhanh, it node hon | Khong dam bao toi uu
+Local | Hill Climbing | Don gian, nhanh | De ket local optimum
+Local | Beam Search | Giu nhieu ung vien, on dinh hon | Ton chi phi danh gia hon Hill Climbing
+Local | Annealing | Co the thoat local optimum | Phu thuoc nhiet do va random
+Uncertainty | AND-OR | Co conditional plan | Mo hinh hoa moi truong phuc tap
+Uncertainty | Partial Obs | Thuc te khi chi quan sat gan | Co the bo sot vat can xa
+Uncertainty | No Obs | Minh hoa belief state | Kho toi uu, thong tin rat it
+CSP | Backtracking | Dung ban chat CSP | De no nhanh
+CSP | Forward Checking | Cat nhanh som | Can ham look-ahead tot
+CSP | Min-Conflicts | Nhanh khi gan dung | Khong dam bao tim nghiem toi uu
+Adversarial | Minimax | Bao thu voi truong hop xau | Ton node
+Adversarial | Alpha-Beta | Giam node so voi Minimax | Phu thuoc thu tu duyet
+Adversarial | Expectimax | Phu hop moi truong xac suat | Can xac suat hop ly
+
+2. Y kien nhom
+
+Viec ap dung 6 nhom thuat toan vao cung bai toan giup thay ro su khac nhau giua cac cach tiep can AI:
+- Search co ban phu hop bai toan tim duong don gian.
+- Informed search giam node expanded bang heuristic.
+- Local search phu hop bai toan toi uu thu tu task va pin.
+- Planning under uncertainty can thiet khi co vat can dong va quan sat khong day du.
+- CSP phu hop khi task co deadline, priority va rang buoc nang luong.
+- Adversarial search phu hop khi robot phai ra quyet dinh trong moi truong co rui ro.
+
+Trong game, moi level khong chi la man choi ma con la mot minh hoa truc quan cho cach thuat toan suy nghi.
+Hieu ung song loang giup nguoi xem thay node duoc mo rong, con path vang giup thay solution cuoi cung.
+
+V. KET LUAN
+
+Do an AI Hospital Dispatcher da xay dung mot moi truong Pygame 20x15 de minh hoa 6 nhom thuat toan AI.
+He thong AlgorithmManager cho phep chon thuat toan theo level va tra ve result thong nhat cho UI.
+Sau cap nhat, chuong trinh ho tro cac thuat toan moi nhu IDA*, Local Beam Search, AND-OR Search, No Observation va Forward Checking.
+
+Ket qua cho thay moi nhom thuat toan co diem manh rieng:
+- BFS/UCS phu hop tim duong chinh xac.
+- A*/IDA*/Greedy phu hop tim duong nhanh voi heuristic.
+- Local search phu hop toi uu route nhieu task va pin.
+- AND-OR va observation models phu hop moi truong khong chac chan.
+- CSP phu hop xep lich co rang buoc.
+- Minimax/Alpha-Beta/Expectimax phu hop ra quyet dinh khi moi truong co rui ro.
+
+Huong phat trien:
+- Bo sung bieu do runtime_ms va nodes_expanded.
+- Luu log tung buoc cua robot.
+- Xuat anh/gif demo tu Pygame cho tung level.
+- Cai tien No Observation bang belief-state planning manh hon.

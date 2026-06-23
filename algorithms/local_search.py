@@ -21,7 +21,13 @@ def _nearest_charge(hospital_map, pos):
     for station in hospital_map.charge_stations:
         result = astar_path(hospital_map, pos, station)
         if result["success"] and (best is None or result["cost"] < best["cost"]):
-            best = {"station": station, "path": result["path"], "cost": result["cost"], "nodes": result["nodes"]}
+            best = {
+                "station": station,
+                "path": result["path"],
+                "visited": result["visited"],
+                "cost": result["cost"],
+                "nodes": result["nodes"],
+            }
     return best
 
 
@@ -32,6 +38,7 @@ def _evaluate(hospital_map, start, tasks, order):
     plan = []
     total_distance = 0
     nodes = 0
+    visited = []
     charges = 0
     score = 0
     elapsed_steps = 0
@@ -42,6 +49,7 @@ def _evaluate(hospital_map, start, tasks, order):
         task = tasks[index]
         direct = astar_path(hospital_map, current, task.target)
         nodes += direct["nodes"]
+        visited.extend(direct["visited"])
         if not direct["success"]:
             success = False
             message = f"Cannot reach {task.name}."
@@ -57,12 +65,14 @@ def _evaluate(hospital_map, start, tasks, order):
             total_distance += charge["cost"]
             elapsed_steps += charge["cost"]
             nodes += charge["nodes"]
+            visited.extend(charge["visited"])
             plan.append("CHARGE")
             charges += 1
             battery = hospital_map.battery_limit
             current = charge["station"]
             direct = astar_path(hospital_map, current, task.target)
             nodes += direct["nodes"]
+            visited.extend(direct["visited"])
             if not direct["success"] or direct["cost"] > battery:
                 success = False
                 message = "Task still unreachable after charging."
@@ -86,6 +96,7 @@ def _evaluate(hospital_map, start, tasks, order):
         "plan": plan,
         "distance": total_distance,
         "nodes": nodes,
+        "visited": visited,
         "charges": charges,
         "score": score,
         "objective": objective,
@@ -116,6 +127,7 @@ def _finish(name, started, evaluation, iterations):
         "runtime_ms": (time.perf_counter() - started) * 1000,
         "success": evaluation["success"],
         "message": evaluation["message"],
+        "visited": evaluation.get("visited", evaluation["path"]),
         "score": evaluation["score"],
         "distance": evaluation["distance"],
         "charging_count": evaluation["charges"],
@@ -172,6 +184,48 @@ def stochastic_hill_climbing(hospital_map, start, tasks):
                 best = candidate
 
     return _finish("Stochastic Hill Climbing", started, best, iterations)
+
+
+def local_beam_search(hospital_map, start, tasks, k=3):
+    started = time.perf_counter()
+    seed = _initial_order(tasks)
+    beam_orders = [seed]
+    for candidate in _neighbors(seed):
+        if candidate not in beam_orders:
+            beam_orders.append(candidate)
+        if len(beam_orders) >= k:
+            break
+
+    beam = [_evaluate(hospital_map, start, tasks, order) for order in beam_orders]
+    best = max(beam, key=lambda item: item["objective"])
+    iterations = 0
+
+    while iterations < 45:
+        candidates = []
+        seen_orders = set()
+        for evaluation in beam:
+            for order in _neighbors(evaluation["order"]):
+                key = tuple(order)
+                if key in seen_orders:
+                    continue
+                seen_orders.add(key)
+                candidates.append(_evaluate(hospital_map, start, tasks, order))
+                iterations += 1
+
+        if not candidates:
+            break
+        candidates.sort(key=lambda item: item["objective"], reverse=True)
+        next_beam = candidates[:k]
+        current_best = next_beam[0]
+        if current_best["objective"] <= best["objective"] and all(
+            tuple(item["order"]) == tuple(old["order"]) for item, old in zip(next_beam, beam)
+        ):
+            break
+        if current_best["objective"] > best["objective"]:
+            best = current_best
+        beam = next_beam
+
+    return _finish("Local Beam Search", started, best, iterations)
 
 
 def simulated_annealing(hospital_map, start, tasks):

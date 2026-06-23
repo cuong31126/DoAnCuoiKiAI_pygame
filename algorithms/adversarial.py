@@ -86,6 +86,7 @@ def _finish(name, started, action, utility, nodes, path_result, message):
         "runtime_ms": (time.perf_counter() - started) * 1000,
         "success": bool(path),
         "message": message,
+        "visited": path_result.get("visited", path) if path_result else [],
         "selected_action": action,
         "utility": round(utility, 2),
     }

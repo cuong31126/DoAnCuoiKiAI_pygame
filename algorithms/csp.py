@@ -24,6 +24,7 @@ def _evaluate_order(hospital_map, start, tasks, order):
     battery = hospital_map.battery_limit
     violations = 0
     nodes = 0
+    visited = []
     score = 0
     plan = []
     dangerous = hospital_map.predicted_dynamic_positions(steps=4)
@@ -32,6 +33,7 @@ def _evaluate_order(hospital_map, start, tasks, order):
         task = tasks[index]
         result = astar_path(hospital_map, current, task.target, avoid=dangerous)
         nodes += result["nodes"]
+        visited.extend(result["visited"])
         if not result["success"]:
             violations += 4
             continue
@@ -60,6 +62,7 @@ def _evaluate_order(hospital_map, start, tasks, order):
         "plan": plan,
         "cost": total_cost,
         "nodes": nodes,
+        "visited": visited,
         "violations": violations,
         "score": score,
         "success": bool(route) and violations == 0,
@@ -77,6 +80,7 @@ def _finish(name, started, evaluation, expanded, message):
         "runtime_ms": (time.perf_counter() - started) * 1000,
         "success": bool(evaluation["path"]),
         "message": message,
+        "visited": evaluation.get("visited", evaluation["path"]),
         "constraint_violations": evaluation["violations"],
         "score": evaluation["score"],
     }
@@ -108,6 +112,72 @@ def backtracking_search(hospital_map, start, tasks):
     return _finish("Backtracking Search", started, best, expanded, message)
 
 
+def forward_checking_search(hospital_map, start, tasks):
+    started = time.perf_counter()
+    order_domain = range(len(tasks))
+    best = None
+    expanded = 0
+    dangerous = hospital_map.predicted_dynamic_positions(steps=4)
+
+    def partial_state(prefix):
+        current = start
+        elapsed = 0
+        battery = hospital_map.battery_limit
+        for index in prefix:
+            task = tasks[index]
+            result = astar_path(hospital_map, current, task.target, avoid=dangerous)
+            if not result["success"]:
+                return None
+            elapsed += result["cost"]
+            battery -= result["cost"]
+            if battery < 0:
+                return None
+            if task.deadline and elapsed > task.deadline:
+                return None
+            current = task.target
+        return current, elapsed, battery
+
+    def forward_ok(prefix, remaining):
+        state = partial_state(prefix)
+        if state is None:
+            return False
+        current, elapsed, battery = state
+        for index in remaining:
+            task = tasks[index]
+            result = astar_path(hospital_map, current, task.target, avoid=dangerous)
+            if not result["success"]:
+                return False
+            projected_elapsed = elapsed + result["cost"]
+            if result["cost"] > battery:
+                return False
+            if task.deadline and projected_elapsed > task.deadline:
+                return False
+        return True
+
+    def backtrack(prefix, remaining):
+        nonlocal best, expanded
+        expanded += 1
+        if not forward_ok(prefix, remaining):
+            return
+        if not remaining:
+            evaluation = _evaluate_order(hospital_map, start, tasks, prefix)
+            if best is None or (evaluation["violations"], -evaluation["score"], evaluation["cost"]) < (
+                best["violations"],
+                -best["score"],
+                best["cost"],
+            ):
+                best = evaluation
+            return
+        for index in sorted(remaining, key=lambda i: (tasks[i].deadline or 999, -tasks[i].priority)):
+            backtrack(prefix + [index], [item for item in remaining if item != index])
+
+    backtrack([], list(order_domain))
+    if best is None:
+        best = _best_by_constraints([_evaluate_order(hospital_map, start, tasks, order) for order in permutations(order_domain)])
+    message = "Forward checking pruned infeasible deadline or battery branches early."
+    return _finish("Forward Checking", started, best, expanded, message)
+
+
 def min_conflicts_search(hospital_map, start, tasks):
     started = time.perf_counter()
     order = list(range(len(tasks)))
@@ -131,23 +201,23 @@ def min_conflicts_search(hospital_map, start, tasks):
     return _finish("Min-Conflicts", started, best, expanded, message)
 
 
-def constraint_graph_search(hospital_map, start, tasks):
-    started = time.perf_counter()
-    expanded = 0
-    ranked = sorted(range(len(tasks)), key=lambda i: (tasks[i].deadline or 999, -tasks[i].priority))
-    candidates = [_evaluate_order(hospital_map, start, tasks, ranked)]
-    expanded += 1
+# def constraint_graph_search(hospital_map, start, tasks):
+#     started = time.perf_counter()
+#     expanded = 0
+#     ranked = sorted(range(len(tasks)), key=lambda i: (tasks[i].deadline or 999, -tasks[i].priority))
+#     candidates = [_evaluate_order(hospital_map, start, tasks, ranked)]
+#     expanded += 1
 
-    for a, b in permutations(range(len(tasks)), 2):
-        if tasks[a].priority > tasks[b].priority:
-            candidate = list(ranked)
-            if candidate.index(a) > candidate.index(b):
-                ia, ib = candidate.index(a), candidate.index(b)
-                candidate[ia], candidate[ib] = candidate[ib], candidate[ia]
-                candidates.append(_evaluate_order(hospital_map, start, tasks, candidate))
-                expanded += 1
+#     for a, b in permutations(range(len(tasks)), 2):
+#         if tasks[a].priority > tasks[b].priority:
+#             candidate = list(ranked)
+#             if candidate.index(a) > candidate.index(b):
+#                 ia, ib = candidate.index(a), candidate.index(b)
+#                 candidate[ia], candidate[ib] = candidate[ib], candidate[ia]
+#                 candidates.append(_evaluate_order(hospital_map, start, tasks, candidate))
+#                 expanded += 1
 
-    best = _best_by_constraints(candidates)
-    message = "Constraint graph ranked tasks by deadline, priority, battery and danger constraints."
-    return _finish("Constraint Graph", started, best, expanded, message)
+#     best = _best_by_constraints(candidates)
+#     message = "Constraint graph ranked tasks by deadline, priority, battery and danger constraints."
+#     return _finish("Constraint Graph", started, best, expanded, message)
 

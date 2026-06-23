@@ -1,26 +1,25 @@
 from algorithms.adversarial import alpha_beta_search, expectimax_search, minimax_search
-from algorithms.csp import backtracking_search, constraint_graph_search, min_conflicts_search
+from algorithms.csp import backtracking_search, forward_checking_search, min_conflicts_search
 from algorithms.informed import (
+    
     astar_route,
-    constraint_propagation_search,
     greedy_route,
-    online_replanning_astar,
-    partial_observation_search,
-    weighted_astar_route,
+    ida_star_route,
+    
 )
-from algorithms.local_search import simple_hill_climbing, simulated_annealing, stochastic_hill_climbing
+from algorithms.local_search import local_beam_search, simple_hill_climbing, simulated_annealing
 from algorithms.uninformed import bfs_search, dfs_search, ucs_search
-
+from algorithms.planning4 import and_or_search, partial_observation_search, no_observation_search
 
 class AlgorithmManager:
     """Dispatches the allowed algorithms for each level through one interface."""
 
     LEVEL_ALGORITHMS = {
         1: ["BFS", "DFS", "UCS"],
-        2: ["A* Search", "Greedy Best-First", "Weighted A*"],
-        3: ["Simple Hill Climbing", "Stochastic Hill Climbing", "Simulated Annealing"],
-        4: ["Online Re-planning A*", "Partial Observation", "Constraint Propagation"],
-        5: ["Backtracking Search", "Min-Conflicts", "Constraint Graph"],
+        2: ["A* Search", "IDA*", "Greedy Best-First"],
+        3: ["Simple Hill Climbing", "Local Beam Search", "Simulated Annealing"],
+        4: ["AND-OR Search", "Partial Observation", "No Observation"],
+        5: ["Backtracking Search", "Forward Checking", "Min-Conflicts"],
         6: ["Minimax", "Alpha-Beta Pruning", "Expectimax"],
     }
 
@@ -52,31 +51,35 @@ class AlgorithmManager:
         if hospital_map.level == 2:
             if name == "A* Search":
                 return astar_route(hospital_map, start, tasks)
+            if name == "IDA*":
+                return ida_star_route(hospital_map, start, tasks)
             if name == "Greedy Best-First":
                 return greedy_route(hospital_map, start, tasks)
-            return weighted_astar_route(hospital_map, start, tasks)
+            return greedy_route(hospital_map, start, tasks)
 
         if hospital_map.level == 3:
             if name == "Simple Hill Climbing":
                 return simple_hill_climbing(hospital_map, start, tasks)
-            if name == "Stochastic Hill Climbing":
-                return stochastic_hill_climbing(hospital_map, start, tasks)
+            if name == "Local Beam Search":
+                return local_beam_search(hospital_map, start, tasks)
             return simulated_annealing(hospital_map, start, tasks)
 
         if hospital_map.level == 4:
             goal = self._best_task(start, tasks).target
-            if name == "Online Re-planning A*":
-                return online_replanning_astar(hospital_map, start, goal)
+            if name == "AND-OR Search":
+                return and_or_search(hospital_map, start, goal)
             if name == "Partial Observation":
                 return partial_observation_search(hospital_map, start, goal)
-            return constraint_propagation_search(hospital_map, start, goal)
+            return no_observation_search(hospital_map, start, goal)
 
         if hospital_map.level == 5:
             if name == "Backtracking Search":
                 return backtracking_search(hospital_map, start, tasks)
+            if name == "Forward Checking":
+                return forward_checking_search(hospital_map, start, tasks)
             if name == "Min-Conflicts":
                 return min_conflicts_search(hospital_map, start, tasks)
-            return constraint_graph_search(hospital_map, start, tasks)
+            return forward_checking_search(hospital_map, start, tasks)
 
         if name == "Minimax":
             return minimax_search(hospital_map, start, tasks, battery=battery)
