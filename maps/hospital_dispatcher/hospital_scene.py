@@ -3,6 +3,7 @@ import pygame
 from core.algorithm_manager import AlgorithmManager
 from core.animation import GIFAnimation
 from core.game_manager import GameManager
+from core.map import build_demo_level
 from core.scene_base import SceneBase
 from core.ui import Button, ConfirmDialog, assets, draw_panel, draw_text
 from settings import (
@@ -52,6 +53,7 @@ class HospitalScene(SceneBase):
         super().__init__(screen, game_ref)
         self.level = max(1, min(6, level))
 
+    # khích hoạt kh ing chơi bắt đầu vào màn 
     def on_enter(self):
         # Khoi tao level hien tai, algorithm manager va HUD cho man choi
         self.game.play_music("assets/sounds/music/chill.ogg")
@@ -63,15 +65,17 @@ class HospitalScene(SceneBase):
         self.result = None
         self.analysis_results = []
         self.analysis_close_rect = None
+        self.state_before_analysis = "READY"
         self.state = "READY"
         self.move_timer = 0.0
-        self.step_seconds = 0.16
+        self.step_seconds = 0.3    # giúp robot đi chậm hơn 
         self.wave_elapsed = 0.0
         self.wave_nodes_per_second = 34
         self.hero_flip = False
         self.confirm = None
         self.buttons = self.build_buttons()
 
+# tải toàn bọ hình ảnh và ảnh động tù thư mực asset lên bộ nhớ 
     def load_visual_assets(self):
         # Tai asset benh vien mot lan, chi thay doi cach ve khong doi ma tran
         tile_size = (TILE_SIZE, TILE_SIZE)
@@ -98,6 +102,7 @@ class HospitalScene(SceneBase):
         )
         self.obstacle_img = assets.load_image("assets/vatcan.png", (34, 34), fallback_color=(136, 98, 214))
 
+# tạo ds các nút bấm trên giao diện , bao gồm các nút chon thuật toán 
     def build_buttons(self):
         # Tao day nut chay thuat toan, analyze, reset, level va menu
         buttons = []
@@ -120,6 +125,8 @@ class HospitalScene(SceneBase):
         )
         return buttons
 
+
+# hàm bổ trợ giúp viết tắt / rút gọn tên các thuật toán dài để hiển thị vừa vặn các nút bấm UI 
     def short_label(self, name):
         labels = {
             "Greedy Best-First": "Greedy",
@@ -134,12 +141,14 @@ class HospitalScene(SceneBase):
         }
         return labels.get(name, name)
 
+    # thay đổi thuật toán AI đc chọn khi nhấn nút tương ứng 
     def select_algorithm(self, name):
         # Doi thuat toan dang duoc chon va cap nhat nut
         self.selected_algorithm = name
         self.buttons = self.build_buttons()
         self.manager.status_message = f"Selected {name}"
 
+# khôi phục màn chơi về vị trí ban đầu 
     def reset_level(self):
         # Reset lai trang thai man choi ve luc bat dau
         self.manager.reset()
@@ -147,27 +156,26 @@ class HospitalScene(SceneBase):
         self.selected_algorithm = self.algorithm_manager.get_algorithms()[0]
         self.result = None
         self.analysis_results = []
+        self.analysis_close_rect = None
+        self.state_before_analysis = "READY"
         self.state = "READY"
         self.move_timer = 0.0
         self.wave_elapsed = 0.0
         self.hero_flip = False
         self.buttons = self.build_buttons()
 
+
     def run_selected(self):
-        # Chay thuat toan dang chon tu vi tri hien tai cua robot
+        # RUN luon reset ve START roi chay thuat toan dang chon.
         if self.state == "ANALYSIS":
             return
-        if self.state == "RUNNING":
-            self.manager.status_message = "Already running. Press STOP to pause."
-            return
-        if self.state == "PAUSED":
-            self.state = "RUNNING" if self.manager.robot.next_cell() else "READY"
-            self.manager.status_message = "Resumed."
-            self.buttons = self.build_buttons()
-            return
+        self.manager.reset()
+        self.algorithm_manager.set_map(self.manager.map)
+        self.move_timer = 0.0
+        self.hero_flip = False
         self.result = self.algorithm_manager.run_algorithm(
             self.selected_algorithm,
-            self.manager.robot.position,
+            self.manager.map.start,
             battery=self.manager.robot.battery,
         )
         self.wave_elapsed = 0.0
@@ -190,17 +198,29 @@ class HospitalScene(SceneBase):
             self.manager.status_message = "Resumed." if self.state == "RUNNING" else "No remaining path."
             self.buttons = self.build_buttons()
 
+# tạo hiển thị bảng phân tích so sánh 
     def open_analysis(self):
-        # Chay tat ca thuat toan de so sanh ket qua
-        self.analysis_results = self.algorithm_manager.analyze_all(
-            start=self.manager.robot.position,
-            battery=self.manager.robot.battery,
+        # Analyze tren map moi tu START de ket qua khong bi lech boi lan chay hien tai.
+        if self.state != "ANALYSIS":
+            self.state_before_analysis = self.state
+        analysis_map = build_demo_level(self.level)
+        analysis_manager = AlgorithmManager(analysis_map)
+        self.analysis_results = analysis_manager.analyze_all(
+            start=analysis_map.start,
+            battery=analysis_map.battery_limit,
         )
         self.state = "ANALYSIS"
+        self.buttons = self.build_buttons()
 
+    def close_analysis(self):
+        self.state = self.state_before_analysis if self.state_before_analysis != "ANALYSIS" else "READY"
+        self.buttons = self.build_buttons()
+
+# hiển thị hộp thoại xác nhận trở về menu 
     def ask_menu(self):
         self.confirm = ConfirmDialog("Return to main menu?", lambda: self.finish("main_menu"))
 
+# lắng nghe và xử lý các sự kiện 
     def handle_events(self, events):
         # Xu ly phim, click nut va bang phan tich
         if self.confirm and self.confirm.active:
@@ -210,14 +230,14 @@ class HospitalScene(SceneBase):
         for event in events:
             if self.state == "ANALYSIS":
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    self.state = "READY"
+                    self.close_analysis()
                 elif (
                     event.type == pygame.MOUSEBUTTONDOWN
                     and event.button == 1
                     and self.analysis_close_rect
                     and self.analysis_close_rect.collidepoint(event.pos)
                 ):
-                    self.state = "READY"
+                    self.close_analysis()
                 continue
 
             if event.type == pygame.KEYDOWN:
@@ -232,6 +252,7 @@ class HospitalScene(SceneBase):
                 if button.handle_event(event):
                     break
 
+# hàm cập nhật logic chậy ngầm mỗi khung hình 
     def update(self, dt):
         # Cap nhat vat can dong, timer va buoc di cua robot
         moved = False
@@ -254,6 +275,11 @@ class HospitalScene(SceneBase):
             self.state = "FAILED"
             self.manager.status_message = "Time limit reached."
             return
+        if self.manager.robot.position in self.manager.map.dynamic_positions():
+            self.manager.robot.collisions += 1
+            self.manager.robot.score -= 20
+            self.replan_from_current("Moving obstacle reached the robot; re-planning.")
+            return
         if moved and self.future_path_blocked():
             self.replan_from_current("Moving obstacle blocked the path.")
             return
@@ -264,6 +290,8 @@ class HospitalScene(SceneBase):
         self.move_timer = 0.0
         self.step_robot()
 
+
+# kt xem trong vòng 
     def future_path_blocked(self):
         dynamic = self.manager.map.dynamic_positions()
         future = self.manager.robot.path[self.manager.robot.path_index + 1 :]

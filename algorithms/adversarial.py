@@ -24,13 +24,13 @@ def _best_task(start, tasks, emergency_only=False):
     )
 
 
-def _nearest_charge(hospital_map, start):
+def _nearest_charge(hospital_map, start, avoid=None):
     if not hospital_map.charge_stations:
         return None, None
     best_station = None
     best_result = None
     for station in hospital_map.charge_stations:
-        result = astar_path(hospital_map, start, station)
+        result = astar_path(hospital_map, start, station, avoid=avoid)
         if result["success"] and (best_result is None or result["cost"] < best_result["cost"]):
             best_station = station
             best_result = result
@@ -40,7 +40,7 @@ def _nearest_charge(hospital_map, start):
 def _action_path(hospital_map, start, tasks, action, avoid_dynamic=False):
     avoid = hospital_map.predicted_dynamic_positions(steps=4) if avoid_dynamic else None
     if action == "go_to_charge":
-        _station, result = _nearest_charge(hospital_map, start)
+        _station, result = _nearest_charge(hospital_map, start, avoid=avoid)
         return result
     if action == "wait":
         return {"path": [start], "cost": 0, "nodes": 1, "success": True}
@@ -49,7 +49,7 @@ def _action_path(hospital_map, start, tasks, action, avoid_dynamic=False):
 
 
 def _utility(hospital_map, start, tasks, action, env_state, battery=None):
-    avoid_dynamic = action in ("replan", "prioritize_emergency")
+    avoid_dynamic = bool(hospital_map.dynamic_obstacles) and action != "wait"
     result = _action_path(hospital_map, start, tasks, action, avoid_dynamic=avoid_dynamic)
     if not result or not result["success"]:
         return -999, result
