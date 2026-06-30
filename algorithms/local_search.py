@@ -166,26 +166,6 @@ def simple_hill_climbing(hospital_map, start, tasks):
     return _finish("Simple Hill Climbing", started, best, iterations)
 
 
-def stochastic_hill_climbing(hospital_map, start, tasks):
-    started = time.perf_counter()
-    current = _initial_order(tasks)
-    best = _evaluate(hospital_map, start, tasks, current)
-    iterations = 0
-
-    for _ in range(90):
-        iterations += 1
-        candidate_order = list(current)
-        a, b = RNG.sample(range(len(candidate_order)), 2)
-        candidate_order[a], candidate_order[b] = candidate_order[b], candidate_order[a]
-        candidate = _evaluate(hospital_map, start, tasks, candidate_order)
-        if candidate["objective"] >= best["objective"] or RNG.random() < 0.15:
-            current = candidate_order
-            if candidate["objective"] > best["objective"]:
-                best = candidate
-
-    return _finish("Stochastic Hill Climbing", started, best, iterations)
-
-
 def local_beam_search(hospital_map, start, tasks, k=3):
     started = time.perf_counter()
     seed = _initial_order(tasks)

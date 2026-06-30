@@ -201,23 +201,4 @@ def min_conflicts_search(hospital_map, start, tasks):
     return _finish("Min-Conflicts", started, best, expanded, message)
 
 
-# def constraint_graph_search(hospital_map, start, tasks):
-#     started = time.perf_counter()
-#     expanded = 0
-#     ranked = sorted(range(len(tasks)), key=lambda i: (tasks[i].deadline or 999, -tasks[i].priority))
-#     candidates = [_evaluate_order(hospital_map, start, tasks, ranked)]
-#     expanded += 1
-
-#     for a, b in permutations(range(len(tasks)), 2):
-#         if tasks[a].priority > tasks[b].priority:
-#             candidate = list(ranked)
-#             if candidate.index(a) > candidate.index(b):
-#                 ia, ib = candidate.index(a), candidate.index(b)
-#                 candidate[ia], candidate[ib] = candidate[ib], candidate[ia]
-#                 candidates.append(_evaluate_order(hospital_map, start, tasks, candidate))
-#                 expanded += 1
-
-#     best = _best_by_constraints(candidates)
-#     message = "Constraint graph ranked tasks by deadline, priority, battery and danger constraints."
-#     return _finish("Constraint Graph", started, best, expanded, message)
 

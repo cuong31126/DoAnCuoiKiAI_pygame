@@ -13,9 +13,10 @@ class MainMenu(SceneBase):
         self.bg = blur_surface(assets.load_image("assets/bg3.png", (SCREEN_WIDTH, SCREEN_HEIGHT), fallback_color=COLOR_BG), scale=0.2, passes=1)
         self.doctor = self.build_doctor_cutout("assets/lonsoda.jpg", (260, 260))
         self.buttons = [
-            Button((538, 330, 204, 52), "BAT DAU", lambda: self.finish("map1"), (34, 53, 82), (58, 86, 128), 24),
-            Button((538, 398, 204, 52), "CHON MAN", lambda: self.finish("map_select"), (34, 53, 82), (58, 86, 128), 23),
-            Button((538, 466, 204, 52), "THOAT", self.game.quit, (102, 44, 50), (151, 63, 72), 24),
+            Button((538, 330, 204, 44), "BAT DAU", lambda: self.finish("map1"), (34, 53, 82), (58, 86, 128), 22),
+            Button((538, 382, 204, 44), "CHON MAN", lambda: self.finish("map_select"), (34, 53, 82), (58, 86, 128), 21),
+            Button((538, 434, 204, 44), "PHAN TICH", lambda: self.finish("analysis"), (80, 50, 120), (110, 75, 160), 21),
+            Button((538, 486, 204, 44), "THOAT", self.game.quit, (102, 44, 50), (151, 63, 72), 22),
         ]
         self.game.play_music("assets/sounds/music/menu_theme.mp3")
 

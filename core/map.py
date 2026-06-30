@@ -8,20 +8,21 @@ from core.task import Task
 
 GridPos = Tuple[int, int]
 
+# khởi tạo màn chơi từ level 1 đến 6 
 
 @dataclass
 class HospitalMap:
     level: int
     title: str
-    grid: List[List[int]]
-    start: GridPos
+    grid: List[List[int]] # ma trận 2D 15 x 20 
+    start: GridPos # tọa độ xuất phát mặc định 
     tasks: List[Task]
     patients: List[Patient] = field(default_factory=list)
     charge_stations: List[GridPos] = field(default_factory=list)
     dynamic_obstacles: List[Obstacle] = field(default_factory=list)
     battery_limit: int = 80
     time_limit: float = 120.0
-    vision_radius: int = 4
+    vision_radius: int = 4 # tầm nhìn radar robot mặc đinh 4 ô 
 
     @property
     def rows(self):
@@ -31,10 +32,12 @@ class HospitalMap:
     def cols(self):
         return len(self.grid[0]) if self.grid else 0
 
+# kt 1 tọa độ có nằm ngoài rìa bản đô ko 
     def in_bounds(self, pos: GridPos):
         row, col = pos
         return 0 <= row < self.rows and 0 <= col < self.cols
 
+# kt ô đó đi đc ko 
     def passable(self, pos: GridPos, extra_blocked: Optional[Iterable[GridPos]] = None):
         if not self.in_bounds(pos):
             return False
@@ -44,12 +47,13 @@ class HospitalMap:
             return False
         return True
 
+# tính chi phí di chuyển  ô có trọng số 2 thì trả về 5 
     def cell_cost(self, pos: GridPos):
         value = self.grid[pos[0]][pos[1]]
         if value == 2:
             return 5
         return 1
-
+# ưu tiên kt neughbors là sang phải , xuống , trái , lên 
     def neighbors(self, pos: GridPos, extra_blocked: Optional[Iterable[GridPos]] = None):
         for dr, dc in ((0, 1), (1, 0), (0, -1), (-1, 0)):
             nxt = (pos[0] + dr, pos[1] + dc)
@@ -59,6 +63,7 @@ class HospitalMap:
     def dynamic_positions(self) -> Set[GridPos]:
         return {obstacle.pos for obstacle in self.dynamic_obstacles}
 
+# bổ trợ cho level 4 và 6 dự đoán trc xem vật cản động 
     def predicted_dynamic_positions(self, steps=3) -> Set[GridPos]:
         positions = set(self.dynamic_positions())
         for obstacle in self.dynamic_obstacles:
@@ -85,12 +90,21 @@ class HospitalMap:
         return [task for task in self.tasks if not task.completed]
 
 
+# 0: Đường đi trống (Bột có thể đi qua, chi phí di chuyển = 1).
+
+# 1: Vật cản cố định / Tường (Robot không thể đi qua).
+
+# 2:  Robot đi qua được nhưng tốn nhiều năng lượng/thời gian hơn, chi phí di chuyển = 5).
+
+# 3: Trạm sạc pin (Charge Station).
+
 def _base_grid():
+    # khởi tạo bản đồ trống toàn bộ đường đi ma trận full 0 
     rows, cols = 15, 20
     grid = [[0 for _ in range(cols)] for _ in range(rows)]
     for col in range(2, 18):
         if col not in (5, 10, 15):
-            grid[3][col] = 1
+            grid[3][col] = 1 # từ cột 2 -> đến 17 hàng 3 trừ cột 5 10 15  thì là tường 
     for col in range(0, 16):
         if col not in (3, 8, 13):
             grid[7][col] = 1

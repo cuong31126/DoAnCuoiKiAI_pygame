@@ -88,59 +88,172 @@ Level 6 - Adversarial Search:
 - Alpha-Beta Pruning.
 - Expectimax.
 
-2. Trang thai bat dau va trang thai muc tieu
+2. Dinh nghia trang thai bat dau va trang thai muc tieu cho tung Level
 
-Trang thai bat dau:
-- Robot o vi tri START cua level.
-- Pin bang battery_limit cua map.
-- Danh sach task chua hoan thanh.
-- Ban do gom san, tuong, o trong so, tram sac va vat can dong neu co.
+- Level 1 - Basic Delivery:
+  + Trang thai bat dau (Start State): Robot o vi tri START (1, 1), muc pin ban dau bang 90, danh sach nhiem vu chua hoan thanh chi co mot phan tu {T1(13, 18)}. Ban do tinh, khong co vat can dong.
+  + Trang thai muc tieu (Goal State): Robot di chuyen den dung vi tri o (13, 18), pin > 0, trang thai nhiem vu T1 chuyen thanh "completed".
+- Level 2 - Multi Patient Delivery:
+  + Trang thai bat dau: Robot o vi tri START (1, 1), muc pin ban dau bang 100, danh sach nhiem vu gom 4 phan tu chua hoan thanh {T1(1, 17), T2(5, 18), T3(10, 2), T4(13, 15)}. Ban do tinh.
+  + Trang thai muc tieu: Robot di chuyen va hoan thanh tat ca 4 nhiem vu trong danh sach, muc pin hien tai tai moi buoc di deu phai lon hon 0.
+- Level 3 - Battery Optimization:
+  + Trang thai bat dau: Robot o vi tri START (1, 1), pin ban dau bi gioi han o muc rat thap bang 30 (pin toi da 80). Danh sach nhiem vu gom 4 phan tu. Cac tram sac co dinh tai: {(13, 1), (1, 18), (8, 10)}.
+  + Trang thai muc tieu: Hoan thanh tat ca 4 nhiem vu ma khong lam robot cạn pin (pin > 0 tai moi thoi diem), bat buoc phai di qua it nhat mot tram sac de nap nang luong.
+- Level 4 - Dynamic Obstacles:
+  + Trang thai bat dau: Robot o vi tri START (1, 1), pin = 90. Danh sach nhiem vu {T1(13, 18), T2(1, 17)}. Moi truong co 3 vat can dong di chuyen tuan hoan. Robot tu dong lua chon 1 nhiem vu toi uu de lap duong di.
+  + Trang thai muc tieu: Robot tiep can thanh cong o muc tieu cua nhiem vu duoc chon ma khong xay ra va cham voi vat can dong nao.
+- Level 5 - Emergency Priority CSP:
+  + Trang thai bat dau: Robot o vi tri START (1, 1), pin = 75. Danh sach nhiem vu gom 4 phan tu co kem thoi han deadline va reward khac nhau: {E1(deadline=24), T1(deadline=45), T2(deadline=75), T3(deadline=85)}.
+  + Trang thai muc tieu: Tim ra mot thu tu di qua tat ca cac nhiem vu sao cho thoi diem robot den moi o deu nho hon hoac bang deadline cua o do, dong thoi thoa man rang buoc nang luong (pin luon > 0).
+- Level 6 - Hospital Crisis:
+  + Trang thai bat dau: Robot o vi tri START (1, 1), pin = 55. Danh sach nhiem vu khan cap co deadline ngat ngheo va moi truong nhieu vat can dong co the gay ra tinh trang phong toa duong di.
+  + Trang thai muc tieu: Robot lua chon hanh dong linh hoat giua thuc hien nhiem vu, tranh vat can dong va di sac pin nham toi uu hoa ham tien ich (Utility) tren toan cuc.
 
-Trang thai muc tieu:
-- Robot cham dung o task/benh nhan can phuc vu.
-- Voi level co nhieu task, robot tao route qua cac task theo thu tu duoc thuat toan chon.
-- Task duoc danh dau completed khi robot den dung o muc tieu.
+3. Chi tiet trien khai va chay tay cac thuat toan tieu bieu tren ma tran 4x4 demo
 
-3. Trinh bay mot thuat toan trong moi nhom
+Nhom 1 - BFS (Breadth-First Search) - Thuat toan tieu bieu cho Tim kiem mu:
+- Ma tran 4x4 demo:
+  S (Start) o (0,0); G (Goal) o (3,3). O tuong '1' o vi tri (1,1) va (1,2). Cac o con lai la san '0' co cost = 1.
+  A = [
+    [S(0,0),  0(0,1),  0(0,2),  0(0,3)],
+    [ 0(1,0),  1(1,1),  1(1,2),  0(1,3)],
+    [ 0(2,0),  0(2,1),  0(2,2),  0(2,3)],
+    [ 0(3,0),  0(3,1),  0(3,2),  G(3,3)]
+  ]
+- Cac buoc chay bang tay (Trace):
+  * Khoi tao: Queue = [(0, 0)], Visited = {(0, 0)}, Parent = {}
+  * Buoc 1: Lay (0,0) ra khoi Queue. Mo rong sang cac o ke chua duyet: (0,1) va (1,0). Cả 2 o deu hop le.
+    -> Queue = [(0, 1), (1, 0)], Visited = {(0,0), (0,1), (1,0)}, Parent = {(0,1): (0,0), (1,0): (0,0)}
+  * Buoc 2: Lay (0,1) ra khoi Queue. Mo rong sang o ke: (0,2). (O (1,1) la tuong nen bo qua).
+    -> Queue = [(1, 0), (0, 2)], Visited = {..., (0,2)}, Parent = {..., (0,2): (0,1)}
+  * Buoc 3: Lay (1,0) ra khoi Queue. Mo rong sang o ke: (2,0).
+    -> Queue = [(0, 2), (2, 0)], Visited = {..., (2,0)}, Parent = {..., (2,0): (1,0)}
+  * Buoc 4: Lay (0,2) ra khoi Queue. Mo rong sang o ke: (0,3). (O (1,2) la tuong nen bo qua).
+    -> Queue = [(2, 0), (0, 3)], Visited = {..., (0,3)}, Parent = {..., (0,3): (0,2)}
+  * Buoc 5: Lay (2,0) ra khoi Queue. Mo rong sang o ke: (3,0) va (2,1).
+    -> Queue = [(0, 3), (3, 0), (2, 1)], Visited = {..., (3,0), (2,1)}, Parent = {..., (3,0): (2,0), (2,1): (2,0)}
+  * Buoc 6: Lay (0,3) ra khoi Queue. Mo rong sang o ke: (1,3).
+    -> Queue = [(3, 0), (2, 1), (1, 3)], Visited = {..., (1,3)}, Parent = {..., (1,3): (0,3)}
+  * Buoc 7: Lay (3,0) ra khoi Queue. Mo rong sang o ke: (3,1).
+    -> Queue = [(2, 1), (1, 3), (3, 1)], Visited = {..., (3,1)}, Parent = {..., (3,1): (3,0)}
+  * Buoc 8: Lay (2,1) ra khoi Queue. Mo rong sang o ke: (2,2).
+    -> Queue = [(1, 3), (3, 1), (2, 2)], Visited = {..., (2,2)}, Parent = {..., (2,2): (2,1)}
+  * Buoc 9: Lay (1,3) ra khoi Queue. Mo rong sang o ke: (2,3).
+    -> Queue = [(3, 1), (2, 2), (2, 3)], Visited = {..., (2,3)}, Parent = {..., (2,3): (1,3)}
+  * Buoc 10: Lay (3,1) ra khoi Queue. Mo rong sang o ke: (3,2).
+    -> Queue = [(2, 2), (2, 3), (3, 2)], Visited = {..., (3,2)}, Parent = {..., (3,2): (3,1)}
+  * Buoc 11: Lay (2,2) ra khoi Queue. Khong co o ke nao moi chua duyet.
+    -> Queue = [(2, 3), (3, 2)]
+  * Buoc 12: Lay (2,3) ra khoi Queue. O ke chua duyet la (3,3) - trung voi G. Dich da duoc tim thay!
+    -> Parent = {..., (3,3): (2,3)}. Dung thuat toan.
+  * Truy vet duong di: (3,3) -> (2,3) -> (1,3) -> (0,3) -> (0,2) -> (0,1) -> (0,0).
+  * Solution Path: [(0,0), (0,1), (0,2), (0,3), (1,3), (2,3), (3,3)]. Cost = 6 buoc.
 
-Nhom 1 - BFS:
-- BFS dung queue FIFO.
-- Mo rong node theo tung lop tu START.
-- Khi gap goal thi reconstruct path.
-- Dam bao duong ngan nhat theo so buoc neu moi buoc co cost bang nhau.
+Nhom 2 - IDA* (Iterative Deepening A*) - Thuat toan tieu bieu cho Tim kiem co Heuristic:
+- Heuristic Manhattan: h(x,y) = |x - 3| + |y - 3|. Chi phi g(n) la so buoc tu (0,0).
+- Ma tran 4x4 demo:
+  S (Start) o (0,0); G (Goal) o (3,3). O tuong '1' o vi tri (1,0) va (1,1).
+  A = [
+    [S(0,0),  0(0,1),  0(0,2),  0(0,3)],
+    [ 1(1,0),  1(1,1),  0(1,2),  0(1,3)],
+    [ 0(2,0),  0(2,1),  0(2,2),  0(2,3)],
+    [ 0(3,0),  0(3,1),  0(3,2),  G(3,3)]
+  ]
+- Cac buoc chay bang tay (Trace):
+  * Khoi tao: h(0,0) = |0-3| + |0-3| = 6. Dat nguong cat f_limit = h(0,0) = 6.
+  * Lan lap 1 (f_limit = 6):
+    Thuc hien DFS tu (0,0) voi dieu kien f(n) = g(n) + h(n) <= 6.
+    - Tu (0,0) [g=0, f=6]: Chi di duoc o ke (0,1) do (1,0) la tuong.
+    - Duyet (0,1) [g=1, h(0,1)=5 -> f=6 <= 6]: Chi di duoc o ke (0,2) do (1,1) la tuong.
+    - Duyet (0,2) [g=2, h(0,2)=4 -> f=6 <= 6]: O ke tiep la (0,3) hoac (1,2). Thu o (0,3).
+    - Duyet (0,3) [g=3, h(0,3)=3 -> f=6 <= 6]: O ke tiep la (1,3).
+    - Duyet (1,3) [g=4, h(1,3)=2 -> f=6 <= 6]: O ke tiep la (2,3).
+    - Duyet (2,3) [g=5, h(2,3)=1 -> f=6 <= 6]: O ke tiep la (3,3).
+    - Duyet (3,3) [g=6, h(3,3)=0 -> f=6 <= 6]: Dich da duoc tim thay va f(3,3) <= f_limit.
+    -> Dung va tra ve Solution Path: [(0,0), (0,1), (0,2), (0,3), (1,3), (2,3), (3,3)]. Cost = 6.
 
-Nhom 2 - IDA*:
-- IDA* ket hop DFS voi heuristic Manhattan.
-- Dat nguong ban dau f_limit = h(start).
-- Moi node co f(n) = g(n) + h(n).
-- Neu f(n) > f_limit thi cat tia nhanh do.
-- Sau moi vong, f_limit moi la gia tri f nho nhat da vuot nguong.
-- Lap lai den khi tim thay duong toi task.
+Nhom 3 - Local Beam Search (k=2) - Thuat toan tieu bieu cho Tim kiem cuc bo:
+- Thong tin bai toan:
+  Robot o S can hoan thanh 3 nhiem vu {T1, T2, T3}. Ma tran khoang cach cho truoc:
+  S->T1=3, S->T2=5, S->T3=6. T1->T2=2, T1->T3=4. T2->T3=3.
+  Ham danh gia Objective: f(P) = Tong khoang cach lo trinh P (gia tri cang nho cang tot).
+- Cac buoc chay bang tay (Trace):
+  * Khoi tao: Voi k=2, chon nguyen ngau nhien 2 lo trinh:
+    - P1 = [T1, T2, T3] -> f(P1) = d(S,T1) + d(T1,T2) + d(T2,T3) = 3 + 2 + 3 = 8.
+    - P2 = [T3, T2, T1] -> f(P2) = d(S,T3) + d(T3,T2) + d(T2,T1) = 6 + 3 + 2 = 11.
+  * Buoc 1: Sinh tat ca trang thai lan can (neighbors) bang cach doi cho hai nhiem vu:
+    - Lan can cua P1:
+      + Doi cho T1, T2 -> P1a = [T2, T1, T3] -> f = 5 + 2 + 4 = 11.
+      + Doi cho T2, T3 -> P1b = [T1, T3, T2] -> f = 3 + 4 + 3 = 10.
+    - Lan can cua P2:
+      + Doi cho T3, T2 -> P2a = [T2, T3, T1] -> f = 5 + 3 + 4 = 12.
+      + Doi cho T2, T1 -> P2b = [T3, T1, T2] -> f = 6 + 4 + 2 = 12.
+  * Buoc 2: Chon k=2 trang thai tot nhat tu tap ung vien {P1(8), P2(11), P1a(11), P1b(10), P2a(12), P2b(12)}:
+    - Ung vien 1: P1 = [T1, T2, T3] voi f = 8.
+    - Ung vien 2: P1b = [T1, T3, T2] voi f = 10.
+  * Ket luan: Lo trinh P1 = [T1, T2, T3] co diem so f = 8 la tot nhat va khong the cai tien them. Tra ve route chuoi: S -> T1 -> T2 -> T3.
 
-Nhom 3 - Local Beam Search:
-- Duy tri dong thoi k lo trinh tot nhat, mac dinh k = 3.
-- Moi lo trinh la mot thu tu task.
-- Sinh cac lo trinh con bang cach doi cho task.
-- Danh gia bang objective dua tren score, distance va so lan charge.
-- Chi giu lai k lo trinh tot nhat toan cuc de lap tiep.
+Nhom 4 - AND-OR Search - Thuat toan tieu bieu cho Lap ke hoach duoi dieu kien bat dinh:
+- Ma tran 4x4 demo:
+  S (Start) tai (0,0); G (Goal) tai (0,2). O (0,1) co vat can dong co the dung yen tai (0,1) hoac di chuyen xuong (1,1).
+- Cac buoc chay bang tay (Trace):
+  * Tu nut goc OR (Robot tai S): Robot co 2 hanh dong lua chon:
+    - Hanh dong 1: Di sang phai (0,1).
+    - Hanh dong 2: Di xuong duoi (1,0).
+  * Tai nut AND cua Hanh dong 1 (Moi truong phan ung khi Robot sang (0,1)):
+    - Kich ban 1.1: Vat can dung yen tai (0,1) -> Robot va cham voi vat can -> Blocked/Failure.
+    - Kich ban 1.2: Vat can di chuyen xuong (1,1) -> O (0,1) trong -> Robot vao (0,1) -> Di tiep sang (0,2) -> Success.
+    => Nhanh di sang phai chua rui ro that bai.
+  * Tai nut AND cua Hanh dong 2 (Moi truong phan ung khi Robot xuong (1,0)):
+    - Kich ban 2.1: Cho du vat can o bat ky dau, robot di chuyen xuong (1,0) la tuyet doi an toan -> Di chuyen tiep: (1,0) -> (2,0) -> (2,1) -> (2,2) -> (1,2) -> (0,2) -> Success 100%.
+  * Ket luan: AND-OR Search sinh ra conditional plan an toan la:
+    - Neu di (1,0) thi di tiep theo lo trinh [(1,0), (2,0), (2,1), (2,2), (1,2), (0,2)] de dam bao ve G thanh cong.
 
-Nhom 4 - AND-OR Search:
-- OR-node dai dien cho lua chon buoc di cua robot.
-- AND-node dai dien cho cac kich ban vat can dong co the xay ra.
-- Thuat toan tao conditional plan bang cach tranh cac vi tri vat can hien tai va du doan.
-- Neu duong sap bi chan, game re-plan tu vi tri hien tai.
+Nhom 5 - Forward Checking - Thuat toan tieu bieu cho CSP:
+- Thiet lap bai toan:
+  Gom 3 bien X = {X1, X2, X3} dai dien cho thu tu thuc hien 3 nhiem vu {T1, T2, T3}. Chi phi di chuyen giua cac o ke tiep la 1.
+  Rang buoc ve thoi gian (deadlines): Deadline(T1)=2, Deadline(T2)=4, Deadline(T3)=1.
+- Cac buoc chay bang tay (Trace):
+  * Khoi tao mien gia tri cho cac bien:
+    D(X1) = {T1, T2, T3}, D(X2) = {T1, T2, T3}, D(X3) = {T1, T2, T3}
+  * Buoc 1: Gan thu X1 = T2 (Thoi gian hoan thanh = 1 <= Deadline(T2)).
+    Thuc hien Forward Checking (FC) tren cac bien con lai:
+    - Voi X2 (Thoi gian tiep theo = 2): T3 bi loai khoi mien vi Deadline(T3) = 1 < 2.
+    - Voi X3 (Thoi gian tiep theo = 3): T1 bi loai khoi mien vi Deadline(T1) = 2 < 3.
+    -> Mien gia tri sau loc: D(X2) = {T1}, D(X3) = {T3}.
+  * Buoc 2: Gan thu tiep X2 = T1 (Thoi gian hoan thanh = 2 <= Deadline(T1)).
+    Thuc hien FC tren bien X3:
+    - Voi X3 (Thoi gian tiep theo = 3): T3 bi loai khoi mien vi Deadline(T3) = 1 < 3.
+    -> D(X3) tro thanh rong (Empty).
+    -> Phát hiện xung đột sớm, thuat toan quay lui ngay lập tức ma khong can thu duyen nhanh X3.
+  * Buoc 3: Quay lui, gan thu X1 = T3 (Thoi gian hoan thanh = 1 <= Deadline(T3)).
+    Thuc hien FC:
+    - Voi X2 (Thoi gian tiep theo = 2): T1 van hop le (2 <= 2).
+    - Voi X3 (Thoi gian tiep theo = 3): T2 van hop le (3 <= 4).
+    - Khong co bien nao bi rong mien gia tri.
+  -> Gan tiep X2 = T1 va X3 = T2. Tim ra loi giai thoa man: T3 -> T1 -> T2.
 
-Nhom 5 - Forward Checking:
-- Dung backtracking de xep thu tu task.
-- Moi khi gan thu mot task vao prefix, thuat toan kiem tra truoc cac task con lai.
-- Neu task tuong lai chac chan vi pham deadline hoac pin, nhanh do bi cat som.
-- Giam so nhanh phai duyet so voi backtracking thuan.
-
-Nhom 6 - Minimax:
-- Moi action cua robot duoc danh gia trong cac trang thai moi truong: clear, crowded, blocked.
-- Utility tinh reward, emergency bonus, distance penalty, collision penalty va battery penalty.
-- Utility co xet battery hien tai.
-- Khi pin yeu, action go_to_charge co diem tot hon nen duoc uu tien.
+Nhom 6 - Minimax - Thuat toan tieu bieu cho Ra quyet dinh doi khang:
+- Thiet lap bai toan:
+  Robot dang co muc pin rat yeu bang 10. Can chon 2 hanh dong (MAX):
+  Hanh dong A (Go to Task), Hanh dong B (Go to Charge).
+  Moi truong (MIN) co the phan ung bang 2 trang thai: Clear (Thong thoang) hoac Blocked (Bi chan).
+- Cac buoc chay bang tay (Trace):
+  * Bieu dien cay quyet dinh Minimax:
+                      [ MAX: Robot ]
+                     /              \
+         (Hanh dong A)              (Hanh dong B)
+                   /                  \
+             [ MIN ]                  [ MIN ]
+            /       \                /       \
+        (Clear)  (Blocked)       (Clear)   (Blocked)
+         [U=10]    [U=-50]        [U=80]     [U=60]
+  * Gia tri tai cac nut:
+    - Nut MIN cua Hanh dong A: min(10, -50) = -50 (Rui ro het pin hoac va cham cao).
+    - Nut MIN cua Hanh dong B: min(80, 60) = 60 (Nap lai nang luong an toan).
+  * Quyet dinh cua Robot tai nut goc MAX:
+    - max(-50, 60) = 60 (Tuong ung voi Hanh dong B).
+  * Ket luan: Robot dua ra lua chon di sac pin truoc de giam thieu toi da rui ro sup nguon.
 
 III. THUC NGHIEM VA KET QUA
 

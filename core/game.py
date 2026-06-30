@@ -85,6 +85,10 @@ class Game:
             from scenes.map_select import MapSelect
 
             self.scene = MapSelect(self.screen, self)
+        elif scene_name == "analysis":
+            from scenes.analysis import AnalysisScene
+
+            self.scene = AnalysisScene(self.screen, self)
         elif scene_name.startswith("map") and scene_name[3:].isdigit():
             from maps.hospital_dispatcher.hospital_scene import HospitalScene
 

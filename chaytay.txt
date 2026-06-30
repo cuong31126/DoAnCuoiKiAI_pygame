@@ -1,0 +1,228 @@
+3. Chi tiet trien khai va chay tay cac thuat toan tieu bieu tren ma tran 4x4 demo
+
+Nhom 1 - BFS (Breadth-First Search) - Dai dien nhom Tim kiem mu
+- Thiet lap ma tran 4x4 demo:
+  S(0,0): Diem bat dau (Start).
+  G(3,3): Diem dich (Goal).
+  O tuong chan 1 tai vi tri (1,1) va (1,2). Cac o con lai la san trong 0 (cost di chuyen = 1).
+  Ma tran A = [
+    [S(0,0),  0(0,1),  0(0,2),  0(0,3)],
+    [ 0(1,0),  1(1,1),  1(1,2),  0(1,3)],
+    [ 0(2,0),  0(2,1),  0(2,2),  0(2,3)],
+    [ 0(3,0),  0(3,1),  0(3,2),  G(3,3)]
+  ]
+
+- Cac buoc chay bang tay (Trace):
+  * Khoi tao: Hàng doi Queue = [(0,0)], Tap da duyet Visited = {(0,0)}, Ban do nut cha Parent = {}.
+  * Buoc 1: Lay (0,0) ra khoi Queue. Duyet cac o ke hop le: (0,1) va (1,0).
+    -> Queue = [(0,1), (1,0)]
+    -> Visited = {(0,0), (0,1), (1,0)}
+    -> Parent = {(0,1): (0,0), (1,0): (0,0)}
+  * Buoc 2: Lay (0,1) ra khoi Queue. O ke hop le chua duyet: (0,2) (bo qua tuong (1,1)).
+    -> Queue = [(1,0), (0,2)]
+    -> Visited = {(0,0), (0,1), (1,0), (0,2)}
+    -> Parent = {..., (0,2): (0,1)}
+  * Buoc 3: Lay (1,0) ra khoi Queue. O ke hop le chua duyet: (2,0) (bo qua tuong (1,1)).
+    -> Queue = [(0,2), (2,0)]
+    -> Visited = {..., (2,0)}
+    -> Parent = {..., (2,0): (1,0)}
+  * Buoc 4: Lay (0,2) ra khoi Queue. O ke hop le chua duyet: (0,3) (bo qua tuong (1,2)).
+    -> Queue = [(2,0), (0,3)]
+    -> Visited = {..., (0,3)}
+    -> Parent = {..., (0,3): (0,2)}
+  * Buoc 5: Lay (2,0) ra khoi Queue. O ke hop le chua duyet: (3,0) va (2,1).
+    -> Queue = [(0,3), (3,0), (2,1)]
+    -> Visited = {..., (3,0), (2,1)}
+    -> Parent = {..., (3,0): (2,0), (2,1): (2,0)}
+  * Buoc 6: Lay (0,3) ra khoi Queue. O ke hop le chua duyet: (1,3).
+    -> Queue = [(3,0), (2,1), (1,3)]
+    -> Visited = {..., (1,3)}
+    -> Parent = {..., (1,3): (0,3)}
+  * Buoc 7: Lay (3,0) ra khoi Queue. O ke hop le chua duyet: (3,1).
+    -> Queue = [(2,1), (1,3), (3,1)]
+    -> Visited = {..., (3,1)}
+    -> Parent = {..., (3,1): (3,0)}
+  * Buoc 8: Lay (2,1) ra khoi Queue. O ke hop le chua duyet: (2,2).
+    -> Queue = [(1,3), (3,1), (2,2)]
+    -> Visited = {..., (2,2)}
+    -> Parent = {..., (2,2): (2,1)}
+  * Buoc 9: Lay (1,3) ra khoi Queue. O ke hop le chua duyet: (2,3).
+    -> Queue = [(3,1), (2,2), (2,3)]
+    -> Visited = {..., (2,3)}
+    -> Parent = {..., (2,3): (1,3)}
+  * Buoc 10: Lay (3,1) ra khoi Queue. O ke hop le chua duyet: (3,2).
+    -> Queue = [(2,2), (2,3), (3,2)]
+    -> Visited = {..., (3,2)}
+    -> Parent = {..., (3,2): (3,1)}
+  * Buoc 11: Lay (2,2) ra khoi Queue. Khong co o ke nao chua duyet.
+    -> Queue = [(2,3), (3,2)]
+  * Buoc 12: Lay (2,3) ra khoi Queue. O ke hop le la (3,3) = G. Dich duoc tim thay!
+    -> Parent = {..., (3,3): (2,3)}. Dung thuat toan.
+  * Truy vet duong di: Di nguoc tu (3,3) -> (2,3) -> (1,3) -> (0,3) -> (0,2) -> (0,1) -> (0,0).
+  * Duong di ket qua: [(0,0), (0,1), (0,2), (0,3), (1,3), (2,3), (3,3)]. Tong chi phi (Cost) = 6 buoc.
+
+---
+
+Nhom 2 - IDA* (Iterative Deepening A*) - Dai dien nhom Tim kiem Heuristic
+- Thiet la ma tran 4x4 demo:
+  S(0,0) la vi tri xuat phat, G(3,3) la dich den.
+  Ham Heuristic Manhattan: h(x,y) = |x - 3| + |y - 3|. Chi phi thuc te g(n) la so buoc di chuyen.
+  O tuong chan 1 tai vi tri (1,0) va (1,1).
+  Ma tran A = [
+    [S(0,0),  0(0,1),  0(0,2),  0(0,3)],
+    [ 1(1,0),  1(1,1),  0(1,2),  0(1,3)],
+    [ 0(2,0),  0(2,1),  0(2,2),  0(2,3)],
+    [ 0(3,0),  0(3,1),  0(3,2),  G(3,3)]
+  ]
+
+- Cac buoc chay bang tay (Trace):
+  * Khoi tao: Nguong cat f ban dau: f_limit = h(0,0) = |0-3| + |0-3| = 6.
+  * Vong lap 1 (f_limit = 6): Tim kiem theo chieu sau (DFS) gioi han boi ham danh gia f(n) = g(n) + h(n) <= 6.
+    - Tu nut goc (0,0) [g=0, f=6]: Do (1,0) la tuong, robot chi co the duyet o ke (0,1).
+    - Duyet (0,1) [g=1, h(0,1)=5 -> f=6 <= 6]: Duyet tiep o ke (0,2) (do (1,1) la tuong).
+    - Duyet (0,2) [g=2, h(0,2)=4 -> f=6 <= 6]: Duyet tiep o ke (0,3).
+    - Duyet (0,3) [g=3, h(0,3)=3 -> f=6 <= 6]: Duyet tiep o ke (1,3).
+    - Duyet (1,3) [g=4, h(1,3)=2 -> f=6 <= 6]: Duyet tiep o ke (2,3).
+    - Duyet (2,3) [g=5, h(2,3)=1 -> f=6 <= 6]: Duyet tiep o ke (3,3).
+    - Duyet (3,3) [g=6, h(3,3)=0 -> f=6 <= 6]: Diem dich G duoc tim thay thanh cong voi chi phi f(3,3) = 6 <= f_limit.
+  * Ket luan: Thuat toan dung va tra ve duong di toi uu: [(0,0), (0,1), (0,2), (0,3), (1,3), (2,3), (3,3)].
+
+---
+
+Nhom 3 - Local Beam Search (k=2) - Dai dien nhom Tim kiem cuc bo
+- Thiet lap ma tran 4x4 demo:
+  Robot xuat phat tai S(0,0), can di qua 2 phong benh T1(0,3) va T2(3,0). Ban do bo tri mot tram sac tai C(2,2).
+  Pin toi da cua robot la 8 don vi. Moi buoc di tieu ton 1 don vi pin. Tuong chan 1 tai (1,1).
+  Ma tran A = [
+    [S(0,0),  0(0,1),  0(0,2), T1(0,3)],
+    [ 0(1,0),  1(1,1),  0(1,2),  0(1,3)],
+    [ 0(2,0),  0(2,1),  C(2,2),  0(2,3)],
+    [T2(3,0),  0(3,1),  0(3,2),  0(3,3)]
+  ]
+  * Khoang cach ngan nhat giua cac diem:
+    d(S,T1) = 3 buoc; d(S,T2) = 3 buoc.
+    d(T1,T2) = 6 buoc (di vong qua tram sac C).
+    d(T1,C) = 3 buoc; d(C,T2) = 3 buoc; d(T2,C) = 3 buoc.
+  * Ham muc tieu f(P) = Tong quang duong di chuyen cua lo trinh P. Neu tai bat ky thoi diem nao pin robot bi roi xuong <= 0, phat them Penalty = 1000 (diem so muc tieu cang nho cang tot).
+
+- Cac buoc chay bang tay (Trace):
+  * Khoi tao (k=2): Chon ngau nhien 2 ung vien lo trinh ban dau:
+    - Lo trinh 1 (P1 = [T1, T2] - Khong sac pin):
+      + Di S(0,0) -> T1(0,3) ton 3 buoc -> Pin giam tu 8 -> 5.
+      + Di tiep T1(0,3) -> T2(3,0) ton 6 buoc -> Pin giam tu 5 -> -1 <= 0 (Robot can nang luong giua duong).
+      + Tinh diem: f(P1) = 3 + 6 + 1000 = 1009 (Bi phat nang).
+    - Lo trinh 2 (P2 = [T1, C, T2] - Ghe tram sac):
+      + Di S(0,0) -> T1(0,3) ton 3 buoc -> Pin con 5.
+      + Di T1(0,3) -> C(2,2) ton 3 buoc -> Pin con 2. Robot dung sac day nang luong ve 8.
+      + Di tiep C(2,2) -> T2(3,0) ton 3 buoc -> Pin con 5 > 0 (An toan).
+      + Tinh diem: f(P2) = 3 + 3 + 3 = 9 (Hop le, an toan).
+  * Buoc 1: Sinh trang thai lan can (neighbors) bang cach hoan vi chuoi:
+    - Lan can P3 = [T2, C, T1] (Robot di S -> T2 -> C -> T1):
+      + Di S(0,0) -> T2(3,0) ton 3 buoc -> Pin con 5.
+      + Di T2(3,0) -> C(2,2) ton 3 buoc -> Pin con 2 -> Sac day lai pin ve 8.
+      + Di C(2,2) -> T1(0,3) ton 3 buoc -> Pin con 5 > 0.
+      + Tinh diem: f(P3) = 3 + 3 + 3 = 9.
+    - Lan can P4 = [T2, T1] (Khong sac pin): f(P4) = 3 + 6 + 1000 = 1009.
+  * Buoc 2: Chon loc k=2 trang thai tot nhat tu tap ung vien {P1(1009), P2(9), P3(9), P4(1009)}:
+    - Giu lai P2 = [T1, C, T2] (f=9) va P3 = [T2, C, T1] (f=9).
+  * Ket luan: Ca hai lo trinh P2, P3 deu toi uu va khong the cai tien them. Robot lua chon thuc hien lo trinh di chuyen S(0,0) -> T1(0,3) -> C(2,2) -> T2(3,0) an toan.
+
+---
+
+Nhom 4 - AND-OR Search - Dai dien nhom Lap ke hoach duoi dieu kien bat dinh
+- Thiet la ma tran 4x4 demo:
+  S(0,0) la vi tri xuat phat, G(0,2) la dich den.
+  O (0,1) co mot vat can dong dang hoat dong. Moi truong bat dinh: vat can nay co xac suat 50% dung yen tai (0,1) va 50% di chuyen xuong o ke duoi (1,1).
+
+- Cac buoc chay bang tay (Trace):
+  * Nut OR goc (Quyet dinh cua Robot tai S): Robot can nhac giua 2 hanh dong di chuyen:
+    - Hanh dong 1: Di sang phai (0,1).
+    - Hanh dong 2: Di xuong duoi (1,0).
+  * Nut AND cho Hanh dong 1 (Cac kich ban phan ung cua moi truong):
+    - Kich ban 1.1 (Xac suat 50%): Vat can dung yen tai (0,1) -> Loi di bi chan dung -> That bai.
+    - Kich ban 1.2 (Xac suat 50%): Vat can di xuong (1,1) -> O (0,1) thong thoang -> Robot di vao (0,1) -> Tien thang toi G(0,2) -> Thanh cong.
+    - Danh gia: Nhanh Hanh dong 1 khong bao dam thanh cong tuyet doi do co nhanh AND that bai.
+  * Nut AND cho Hanh dong 2 (Cac kich ban phan ung cua moi truong):
+    - Kich ban 2.1 (Xac suat 100%): Bat chap vat can o vi tri nao, Robot di chuyen xuong o (1,0) luon an toan tuyet doi.
+    - Tu (1,0), Robot thuc hien chuoi hanh dong ke tiep: di toi (2,0) -> (2,1) -> (2,2) -> (1,2) -> G(0,2) -> Thanh cong 100%.
+  * Ket luan: AND-OR Search tao ra ke hoach co dieu kien (conditional plan) an toan:
+    Plan = Di xuong (1, 0) -> Di tiep: [(2, 0), (2, 1), (2, 2), (1, 2), (0, 2)]
+
+---
+
+Nhom 5 - Forward Checking - Dai dien nhom CSP
+- Thiet lap ma tran 4x4 demo:
+  Robot o xuat phat S(0, 0). Hai giuong benh can tham kham la T1(0, 2) va T2(2, 0). O tuong 1 chan tai vi tri (1, 1).
+  Ma tran A = [
+    [S(0,0),  0(0,1), T1(0,2),  0(0,3)],
+    [ 0(1,0),  1(1,1),  0(1,2),  0(1,3)],
+    [T2(2,0),  0(2,1),  0(2,2),  0(2,3)],
+    [ 0(3,0),  0(3,1),  0(3,2),  0(3,3)]
+  ]
+  * Chi phi di chuyen thuc te:
+    d(S,T1) = 2 buoc.
+    d(S,T2) = 2 buoc.
+    d(T1,T2) = 4 buoc (do bi tuong (1, 1) chan giua nen phai di chuyen vong qua (0, 1) hoac (1, 2)).
+  * Rang buoc thoi han hoan thanh (Deadlines): Deadline(T1) = 2 buoc, Deadline(T2) = 6 buoc.
+  * Cac bien so can gan: X1 (Nhiem vu dau tien), X2 (Nhiem vu thu hai). Mien gia tri ban dau D(Xi) = {T1, T2}.
+
+- Cac buoc chay bang tay (Trace):
+  * Khoi tao mien gia tri: D(X1) = {T1, T2}, D(X2) = {T1, T2}.
+  * Buoc 1: Gan thu X1 = T2 (Robot di S(0,0) -> T2(2,0), ton t = 2 buoc. Rang buoc: 2 <= Deadline(T2) = 6 -> Hop le).
+    Thuc hien Forward Checking (FC) du doan truoc cho bien con lai X2:
+    - Tu T2(2,0), robot phai di tiep toi T1(0,2) ton 4 buoc nua -> Tong thoi gian hoan thanh T1 la: t = 2 + 4 = 6 buoc.
+    - Kiem tra rang buoc cua T1: t = 6 > Deadline(T1) = 2 -> Vi pham nghiem trong!
+    - Loai bo T1 ra khoi mien gia tri cua X2 -> D(X2) = rong.
+    - Phat hien xung dot: Vi mien gia tri D(X2) bi triet tieu hoan toan, thuat toan lap tuc quay lui (Backtrack), cat tia nhanh nhanh tim kiem X1 = T2.
+  * Buoc 2: Quay lui, thu gan X1 = T1 (Robot di S(0,0) -> T1(0,2) ton t = 2 buoc. Rang buoc: 2 <= Deadline(T1) = 2 -> Hop le).
+    Thuc hien Forward Checking (FC) du doan truoc cho bien con lai X2:
+    - Tu T1(0,2), robot di tiep toi T2(2,0) ton 4 buoc -> Tong thoi gian hoan thanh T2 la: t = 2 + 4 = 6 buoc.
+    - Kiem tra rang buoc cua T2: t = 6 <= Deadline(T2) = 6 -> Thoa man!
+    - Giu lai T2 trong mien gia tri: D(X2) = {T2}.
+  * Buoc 3: Thuc hien gan tiep X2 = T2 (Hop le, khong co bien nao bi rong mien gia tri).
+  * Ket luan: Tim duoc lo trinh phan bo cong viec toi uu thoa man CSP la: S(0,0) -> T1(0,2) -> T2(2,0).
+
+---
+
+Nhom 6 - Minimax - Dai dien nhom Quyet dinh doi khang
+- Thiet lap ma tran 4x4 demo:
+  Robot o S(0, 0) voi dung luong pin cuc ky yeu P = 3. O dich giuong benh can cuu la T(0, 2), tram sac la C(2, 0), tuong chan 1 tai (1, 1).
+  Mot vat can dong O dang dung o o (0, 1) co xac suat chuyen dong bat ngo.
+  Ma tran A = [
+    [S(0,0),  O(0,1),  T(0,2),  0(0,3)],
+    [ 0(1,0),  1(1,1),  0(1,2),  0(1,3)],
+    [C(2,0),  0(2,1),  0(2,2),  0(2,3)],
+    [ 0(3,0),  0(3,1),  0(3,2),  0(3,3)]
+  ]
+  * Robot (nguoi choi MAX) co 2 su lua chon hanh dong di chuyen:
+    - Hanh dong A (Go to Task): Robot tien sang phai o (0, 1) de huong thang toi giuong benh T.
+    - Hanh dong B (Go to Charge): Robot di xuong duoi o (1, 0) de huong ve tram sac C.
+  * Moi truong (doi thu MIN) co 2 trang thai phan ung tai buoc ke tiep:
+    - Clear: Vat can dong chu dong dich chuyen sang o khac, mo duong cho robot.
+    - Blocked: Vat can dong dung yen hoac di chuyen chan duong robot di chuyen.
+
+- Cac buoc chay bang tay (Trace):
+  * Bieu dien cay quyet dinh Minimax 2 tang:
+                      [ MAX: Robot ]
+                     /              \
+         (Hanh dong A)              (Hanh dong B)
+                   /                  \
+             [ MIN ]                  [ MIN ]
+            /       \                /       \
+        (Clear)  (Blocked)       (Clear)   (Blocked)
+         [U=100]   [U=-100]       [U=60]     [U=60]
+
+  * Tinh toan gia tri Utility (U) tai cac nut la cua cay quyet dinh:
+    - Tai nut MIN cua Hanh dong A (Go to Task):
+      + Neu moi truong la Clear: Robot di qua (0, 1) an toan va tiep can T(0, 2) thanh cong. U = +100.
+      + Neu moi truong la Blocked: Robot di sang phai va dam truc dien vat can dong tai (0, 1). U = -100 (Va cham / Hong hoc).
+      + Luong hoa tai nut MIN trai: min(100, -100) = -100.
+    - Tai nut MIN cua Hanh dong B (Go to Charge):
+      + Du moi truong la Clear hay Blocked, robot di xuong (1, 0) -> (2, 0) deu hoan toan an toan va sac day pin.
+      + Neu moi truong la Clear: Robot nap pin an toan, U = +60.
+      + Neu moi truong la Blocked: Robot nap pin an toan, U = +60.
+      + Luong hoa tai nut MIN phai: min(60, 60) = 60.
+  * Quyet dinh cua Robot tai nut goc MAX:
+    - Robot chon hanh dong toi da hoa loi ich:
+      max(MIN_trai, MIN_phai) = max(-100, 60) = 60 -> Chon Hanh dong B.
+  * Ket luan: Robot quyet dinh di chuyen di xuong huong tram sac C(2,0) truoc de dam bao an toan tuyet doi, tranh rui ro va cham hoac can nguon.

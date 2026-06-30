@@ -22,7 +22,7 @@ class MapSelect(SceneBase):
         gap_y = 55
         data = [
             ("LEVEL 1", "Basic delivery\nBFS DFS UCS", "map1", True, "DELIVERY", "assets/round1.png"),
-            ("LEVEL 2", "Multi patient\nA* Greedy WA*", "map2", True, "ROUTING", "assets/round2.png"),
+            ("LEVEL 2", "Multi patient\nA* IDA* Greedy", "map2", True, "ROUTING", "assets/round2.png"),
             ("LEVEL 3", "Battery plan\nLocal search", "map3", True, "BATTERY", "assets/round3.png"),
             ("LEVEL 4", "Dynamic halls\nRe-planning", "map4", True, "DYNAMIC", "assets/round4.png"),
             ("LEVEL 5", "Emergency CSP\nDeadlines", "map5", True, "CSP", "assets/round5.png"),

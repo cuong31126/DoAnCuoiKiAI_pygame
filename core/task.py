@@ -1,10 +1,13 @@
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
+# mục tiêu ĐN cấu trúc của 1 Task trong game 
 
+# tọa độ 
 GridPos = Tuple[int, int]
 
 
+# mỗi khi tạo 1 task sẽ có các thông tin sau 
 @dataclass
 class Task:
     """A hospital delivery/support task on the grid."""
