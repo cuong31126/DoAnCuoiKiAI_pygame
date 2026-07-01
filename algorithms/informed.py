@@ -35,7 +35,7 @@ def _runtime_result(name, started, path, plan, cost, nodes, success, message, vi
         result.update(extra)
     return result
 
-
+# có tham số avoid cho thuật toán c4 gọi 
 def _search(hospital_map, start, goal, name, weight=1.0, greedy=False, avoid=None):
     avoid = set(avoid or [])
     heap = [(0, 0, start)]
@@ -52,7 +52,7 @@ def _search(hospital_map, start, goal, name, weight=1.0, greedy=False, avoid=Non
         visited.append(node)
         if node == goal:
             break
-        for nxt in hospital_map.neighbors(node, avoid):
+        for nxt in hospital_map.neighbors(node, avoid): # avoid c4 né các ô có vật cản động 
             step = hospital_map.cell_cost(nxt)
             new_cost = cost + step
             if nxt not in g_score or new_cost < g_score[nxt]:

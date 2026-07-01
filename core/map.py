@@ -22,7 +22,7 @@ class HospitalMap:
     dynamic_obstacles: List[Obstacle] = field(default_factory=list)
     battery_limit: int = 80
     time_limit: float = 120.0
-    vision_radius: int = 4 # tầm nhìn radar robot mặc đinh 4 ô 
+    vision_radius: int = 4 # tầm nhìn radar robot mặc đinh 4 ô áp dụng cho partial c4 
 
     @property
     def rows(self):
@@ -38,11 +38,13 @@ class HospitalMap:
         return 0 <= row < self.rows and 0 <= col < self.cols
 
 # kt ô đó đi đc ko 
+
     def passable(self, pos: GridPos, extra_blocked: Optional[Iterable[GridPos]] = None):
         if not self.in_bounds(pos):
             return False
-        if self.grid[pos[0]][pos[1]] == 1:
+        if self.grid[pos[0]][pos[1]] == 1:  # ô là tường thật cho ra false 
             return False
+        # ô nằm trong tập cấm  cho ra false 
         if extra_blocked and pos in set(extra_blocked):
             return False
         return True
@@ -54,22 +56,26 @@ class HospitalMap:
             return 5
         return 1
 # ưu tiên kt neughbors là sang phải , xuống , trái , lên 
+# nhận avoid dưới dạng extra_blocked và gọi hàm passable
     def neighbors(self, pos: GridPos, extra_blocked: Optional[Iterable[GridPos]] = None):
         for dr, dc in ((0, 1), (1, 0), (0, -1), (-1, 0)):
             nxt = (pos[0] + dr, pos[1] + dc)
             if self.passable(nxt, extra_blocked):
                 yield nxt
 
+# hàm lấy vị trí hiện tại áp dụng thuật toán and or search , partial observation , no observation
     def dynamic_positions(self) -> Set[GridPos]:
         return {obstacle.pos for obstacle in self.dynamic_obstacles}
 
 # bổ trợ cho level 4 và 6 dự đoán trc xem vật cản động 
     def predicted_dynamic_positions(self, steps=3) -> Set[GridPos]:
-        positions = set(self.dynamic_positions())
+        positions = set(self.dynamic_positions()) # khởi tạo vt hiện tại 
         for obstacle in self.dynamic_obstacles:
+            # gọi hàm dự đoán của từng vật cản và thêm vào tập hợp 
             positions.update(obstacle.predicted_positions(steps))
         return positions
 
+# tính toán tập hợp các ô quét áp dụng cho partial c4  
     def visible_cells(self, center: GridPos, radius: Optional[int] = None):
         radius = self.vision_radius if radius is None else radius
         visible = set()

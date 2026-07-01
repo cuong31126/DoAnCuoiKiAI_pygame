@@ -20,7 +20,7 @@ class HospitalHUD:
             f"Timer: {int(manager.elapsed)}/{int(hospital_map.time_limit)}s",
             f"Current task: {manager.current_task_label()}",
             f"Algorithm: {selected_algorithm}",
-            f"Path found: {path_found}",
+            f"Path found: {path_found}",  # này cũng lấy từ result 
             f"Nodes expanded: {self._value(result, 'nodes_expanded')}",
             f"Path length: {self._value(result, 'path_length')}",
             f"Total cost: {self._value(result, 'cost')}",
@@ -29,6 +29,7 @@ class HospitalHUD:
             f"Collisions: {robot.collisions}",
             f"State: {state}",
         ]
+        # đem so với phần return của code thuật toán chính xác lẩy ra 5 cái thuộc tính ơ đây
         y = rect.y + 70
         for line in lines:
             draw_text(surface, line, 16, COLOR_WHITE, (rect.x + 20, y))

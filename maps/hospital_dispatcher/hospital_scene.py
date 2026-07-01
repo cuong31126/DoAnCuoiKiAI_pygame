@@ -170,6 +170,7 @@ class HospitalScene(SceneBase):
         self.hero_flip = False
         self.buttons = self.build_buttons()
 
+# demo luồng từ obser --> algorithm_manager --> hospital_scene --> vẽ hub
 # demo luồng ở  hàm nyaf
     def run_selected(self):
         # RUN luon reset ve START roi chay thuat toan dang chon.
@@ -180,6 +181,7 @@ class HospitalScene(SceneBase):
         self.move_timer = 0.0
         self.hero_flip = False
         # sau khi ấn run nó sẽ qua đây 
+        # các thuật toán sẽ dều vào result của clss hospitalscene này hết 
         self.result = self.algorithm_manager.run_algorithm(
             self.selected_algorithm,
             self.manager.map.start,
@@ -271,8 +273,9 @@ class HospitalScene(SceneBase):
             self.hero_run.update(dt)
             for anim in getattr(self, "obstacle_anims", []):
                 anim.update(dt)
+            # khi game đang chạy liên tục cập nhật 
             for obstacle in self.manager.map.dynamic_obstacles:
-                moved = obstacle.update(dt) or moved
+                moved = obstacle.update(dt) or moved # dt là khoảng tg giữa 2 khugn
 
         if self.state != "RUNNING":
             return
