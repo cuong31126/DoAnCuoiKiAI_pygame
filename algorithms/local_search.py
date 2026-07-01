@@ -5,21 +5,23 @@ import time
 from algorithms.informed import astar_path
 
 
-RNG = random.Random(42)
+RNG = random.Random(42) # khởi tạo bộ sinh số ngẫu nhiên với hạt giôgns seed cố định là 42 để đảm bảo kết quả chạy thử nh luôn ổn đinh và có thể tái hiện lại giiongs nhau giua các lần chạy 
 
 
+# hàm phụ trợ ghêp nối lộ trinh mrge 
 def _merge(first, second):
     if not first:
         return list(second)
     if not second:
         return list(first)
-    return list(first) + list(second)[1:]
+    return list(first) + list(second)[1:]  # loại bỏ phan tu dau tien của ds thứ hai 
+# tránh lặp lại toa dộ tung gian tại điểm tiếp nói 
 
-
+# hàm tìm trạm sạc gân nhất 
 def _nearest_charge(hospital_map, pos):
     best = None
-    for station in hospital_map.charge_stations:
-        result = astar_path(hospital_map, pos, station)
+    for station in hospital_map.charge_stations: # duyệt qua tất cả các trạm sạc 
+        result = astar_path(hospital_map, pos, station) # sử dụng A* tìm đường đi tới trạm sạc đó . 
         if result["success"] and (best is None or result["cost"] < best["cost"]):
             best = {
                 "station": station,
@@ -33,16 +35,16 @@ def _nearest_charge(hospital_map, pos):
 
 def _evaluate(hospital_map, start, tasks, order):
     current = start
-    battery = hospital_map.battery_limit
-    route = []
-    plan = []
+    battery = hospital_map.battery_limit # lấy giới hạn pin tối đa của robot 
+    route = []    # luu tru toan bo lo tỉnh tọa độ thực tế robot đi 
+    plan = [] # luu các hanhf động robot làm 
     total_distance = 0
     nodes = 0
     visited = []
-    charges = 0
-    score = 0
-    elapsed_steps = 0
-    success = True
+    charges = 0 # số lần robot phải vượt qua 
+    score = 0 # điẻm thưởng tích lũy sau khi lm nv 
+    elapsed_steps = 0 # tổng số bước đi 
+    success = True 
     message = "Plan evaluated."
 
     for index in order:

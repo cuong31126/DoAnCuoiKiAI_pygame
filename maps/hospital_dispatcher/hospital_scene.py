@@ -132,7 +132,7 @@ class HospitalScene(SceneBase):
 # hàm bổ trợ giúp viết tắt / rút gọn tên các thuật toán dài để hiển thị vừa vặn các nút bấm UI 
     def short_label(self, name):
         labels = {
-            "Greedy Best-First": "Greedy",
+            "Greedy Best-First": "Greedy BFS",
             "Local Beam Search": "Beam",
             "Simple Hill Climbing": "Hill Climb",
             "Simulated Annealing": "Annealing",
@@ -170,7 +170,7 @@ class HospitalScene(SceneBase):
         self.hero_flip = False
         self.buttons = self.build_buttons()
 
-
+# demo luồng ở  hàm nyaf
     def run_selected(self):
         # RUN luon reset ve START roi chay thuat toan dang chon.
         if self.state == "ANALYSIS":
@@ -179,6 +179,7 @@ class HospitalScene(SceneBase):
         self.algorithm_manager.set_map(self.manager.map)
         self.move_timer = 0.0
         self.hero_flip = False
+        # sau khi ấn run nó sẽ qua đây 
         self.result = self.algorithm_manager.run_algorithm(
             self.selected_algorithm,
             self.manager.map.start,

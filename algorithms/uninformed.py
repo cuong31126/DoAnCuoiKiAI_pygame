@@ -2,7 +2,7 @@ from collections import deque
 import heapq
 import time
 
-# đóng gói kết qẩu 
+# đóng gói kết quả chạy thuật toán
 def _result(name, path, visited, cost, success=True, message="Done"):
     return {
         "name": name,
@@ -77,7 +77,7 @@ def bfs_search(hospital_map, start, goal):
 #             if nxt not in parent:
 #                 parent[nxt] = node
                 
-#                 # KIỂM TRA ĐÍCH SỚM TẠI ĐÂY 🎯
+#                 # KIỂM TRA ĐÍCH SỚM TẠI ĐÂY 
 #                 if nxt == goal:
 #                     # Vì nxt là đích, ta thêm luôn nxt vào visited để ghi nhận đã tìm thấy
 #                     visited.append(nxt)

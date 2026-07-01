@@ -40,7 +40,6 @@ def partial_observation_search(hospital_map, start, goal):
         goal,
         "Partial Observation",
         avoid=visible_dynamic,
-        visible_only=False,
     )
     return _runtime_result(
         "Partial Observation",

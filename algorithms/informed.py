@@ -36,14 +36,13 @@ def _runtime_result(name, started, path, plan, cost, nodes, success, message, vi
     return result
 
 
-def _search(hospital_map, start, goal, name, weight=1.0, greedy=False, avoid=None, visible_only=False):
+def _search(hospital_map, start, goal, name, weight=1.0, greedy=False, avoid=None):
     avoid = set(avoid or [])
     heap = [(0, 0, start)]
     parent = {start: start}
     g_score = {start: 0}
     visited = []
     closed = set()
-    visible = hospital_map.visible_cells(start) if visible_only else None
 
     while heap:
         _, cost, node = heapq.heappop(heap)
@@ -54,8 +53,6 @@ def _search(hospital_map, start, goal, name, weight=1.0, greedy=False, avoid=Non
         if node == goal:
             break
         for nxt in hospital_map.neighbors(node, avoid):
-            if visible is not None and nxt not in visible and manhattan(nxt, goal) > manhattan(node, goal):
-                continue
             step = hospital_map.cell_cost(nxt)
             new_cost = cost + step
             if nxt not in g_score or new_cost < g_score[nxt]:
@@ -143,6 +140,8 @@ def ida_star_path(hospital_map, start, goal, avoid=None, max_iterations=180):
         "final_threshold": threshold,
     }
 
+# Điểm s = kc mahattan - độ ưu tiên * 3 + (0 nếu ko khẩn cấp, -8 nếu khẩn cấp)
+# cái nào nhỏ nhất sẽ được chọn làm nhiệm vụ tiếp theo.
 
 def _choose_next(current, tasks):
     return min(
@@ -150,7 +149,7 @@ def _choose_next(current, tasks):
         key=lambda task: manhattan(current, task.target) - task.priority * 3 + (0 if not task.urgent else -8),
     )
 
-
+# từ hàm astar_route gọi qua hàm nà 
 def _route(hospital_map, start, tasks, name, weight=1.0, greedy=False):
     started = time.perf_counter()
     current = start
@@ -161,8 +160,8 @@ def _route(hospital_map, start, tasks, name, weight=1.0, greedy=False):
     total_cost = 0
 
     while remaining:
-        task = _choose_next(current, remaining)
-        result = _search(hospital_map, current, task.target, name, weight=weight, greedy=greedy)
+        task = _choose_next(current, remaining) # gọi hàm này để chon ra nhiệm vụ tiếp theo cần thực hiện 
+        result = _search(hospital_map, current, task.target, name, weight=weight, greedy=greedy) # từ current đến nhiệm vụ vưa chọn 
         if not result["success"]:
             return _runtime_result(name, started, full_path, plan, total_cost, len(full_visited), False, f"Cannot reach {task.name}.", full_visited)
         segment = result["path"]
